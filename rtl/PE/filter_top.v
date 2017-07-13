@@ -87,15 +87,15 @@ module filter3x3(clk, fast_clk, rst, data_in_valid, din, weight_in_valid, weight
             .data_out_valid(metronome_out_valid)
         );
     
-	multiplier MUL0(.fast_clk(fast_clk),.rst(rst),.data_in_valid(metronome_in_valid), .din1(din), .din2(weight1), .data_out_valid(metronome_out_valid), .dout(mul1));
-	multiplier MUL1(.fast_clk(fast_clk),.rst(rst),.data_in_valid(metronome_in_valid), .din1(linebuffer1[2*BITWIDTH-1:BITWIDTH]), .din2(weight2), .data_out_valid(metronome_out_valid), .dout(mul2));
-	multiplier MUL2(.fast_clk(fast_clk),.rst(rst),.data_in_valid(metronome_in_valid), .din1(linebuffer1[3*BITWIDTH-1:2*BITWIDTH]), .din2(weight3), .data_out_valid(metronome_out_valid), .dout(mul3));
-	multiplier MUL3(.fast_clk(fast_clk),.rst(rst),.data_in_valid(metronome_in_valid), .din1(linebuffer2[BITWIDTH-1:0]), .din2(weight4), .data_out_valid(metronome_out_valid), .dout(mul4));
-	multiplier MUL4(.fast_clk(fast_clk),.rst(rst),.data_in_valid(metronome_in_valid), .din1(linebuffer2[2*BITWIDTH-1:BITWIDTH]), .din2(weight5), .data_out_valid(metronome_out_valid), .dout(mul5));
-	multiplier MUL5(.fast_clk(fast_clk),.rst(rst),.data_in_valid(metronome_in_valid), .din1(linebuffer2[3*BITWIDTH-1:2*BITWIDTH]), .din2(weight6), .data_out_valid(metronome_out_valid), .dout(mul6));
-	multiplier MUL6(.fast_clk(fast_clk),.rst(rst),.data_in_valid(metronome_in_valid), .din1(pixel_buffer[BITWIDTH-1:0]), .din2(weight7), .data_out_valid(metronome_out_valid), .dout(mul7));
-	multiplier MUL7(.fast_clk(fast_clk),.rst(rst),.data_in_valid(metronome_in_valid), .din1(pixel_buffer[2*BITWIDTH-1:BITWIDTH]), .din2(weight8), .data_out_valid(metronome_out_valid), .dout(mul8));
-	multiplier MUL8(.fast_clk(fast_clk),.rst(rst),.data_in_valid(metronome_in_valid), .din1(pixel_buffer[3*BITWIDTH-1:2*BITWIDTH]), .din2(weight9), .data_out_valid(metronome_out_valid), .dout(mul9));
+	multiplier #(BITWIDTH) MUL0(.fast_clk(fast_clk),.rst(rst),.data_in_valid(metronome_in_valid), .din1(din), .din2(weight1), .data_out_valid(metronome_out_valid), .dout(mul1));
+	multiplier #(BITWIDTH) MUL1(.fast_clk(fast_clk),.rst(rst),.data_in_valid(metronome_in_valid), .din1(linebuffer1[2*BITWIDTH-1:BITWIDTH]), .din2(weight2), .data_out_valid(metronome_out_valid), .dout(mul2));
+	multiplier #(BITWIDTH) MUL2(.fast_clk(fast_clk),.rst(rst),.data_in_valid(metronome_in_valid), .din1(linebuffer1[3*BITWIDTH-1:2*BITWIDTH]), .din2(weight3), .data_out_valid(metronome_out_valid), .dout(mul3));
+	multiplier #(BITWIDTH) MUL3(.fast_clk(fast_clk),.rst(rst),.data_in_valid(metronome_in_valid), .din1(linebuffer2[BITWIDTH-1:0]), .din2(weight4), .data_out_valid(metronome_out_valid), .dout(mul4));
+	multiplier #(BITWIDTH) MUL4(.fast_clk(fast_clk),.rst(rst),.data_in_valid(metronome_in_valid), .din1(linebuffer2[2*BITWIDTH-1:BITWIDTH]), .din2(weight5), .data_out_valid(metronome_out_valid), .dout(mul5));
+	multiplier #(BITWIDTH) MUL5(.fast_clk(fast_clk),.rst(rst),.data_in_valid(metronome_in_valid), .din1(linebuffer2[3*BITWIDTH-1:2*BITWIDTH]), .din2(weight6), .data_out_valid(metronome_out_valid), .dout(mul6));
+	multiplier #(BITWIDTH) MUL6(.fast_clk(fast_clk),.rst(rst),.data_in_valid(metronome_in_valid), .din1(pixel_buffer[BITWIDTH-1:0]), .din2(weight7), .data_out_valid(metronome_out_valid), .dout(mul7));
+	multiplier #(BITWIDTH) MUL7(.fast_clk(fast_clk),.rst(rst),.data_in_valid(metronome_in_valid), .din1(pixel_buffer[2*BITWIDTH-1:BITWIDTH]), .din2(weight8), .data_out_valid(metronome_out_valid), .dout(mul8));
+	multiplier #(BITWIDTH) MUL8(.fast_clk(fast_clk),.rst(rst),.data_in_valid(metronome_in_valid), .din1(pixel_buffer[3*BITWIDTH-1:2*BITWIDTH]), .din2(weight9), .data_out_valid(metronome_out_valid), .dout(mul9));
 	
 	n_bit_adder #(BITWIDTH+1) n1(.din1(mul1[2*BITWIDTH-1:BITWIDTH]), .din2(mul2[2*BITWIDTH-1:BITWIDTH]), .dout(add1[BITWIDTH-1:0]), .carry(add1[BITWIDTH]));
 	n_bit_adder #(BITWIDTH+1) n2(.din1(mul3[2*BITWIDTH-1:BITWIDTH]), .din2(mul4[2*BITWIDTH-1:BITWIDTH]), .dout(add2[BITWIDTH-1:0]), .carry(add2[BITWIDTH]));
