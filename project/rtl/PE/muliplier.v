@@ -21,7 +21,7 @@
 
 
 module multiplier(
-    fast_clk, rst, data_in_valid, din1, din2, data_out_valid, dout
+    fast_clk, rst, data_in_valid, din1, din2, data_out_valid, last_count, dout
     );
     function integer clog2;
        input integer value;
@@ -37,6 +37,7 @@ module multiplier(
     input fast_clk, rst, data_in_valid;
     input data_out_valid;
     input [BITWIDTH-1:0] din1, din2;
+    input [clog2(BITWIDTH)+1:0] last_count;
     output [2*BITWIDTH-1:0] dout;
     
     //wire [2*BITWIDTH-1:0] tmp_buf[BITWIDTH-1:0];
@@ -60,14 +61,9 @@ module multiplier(
     always @ (data_in_valid) begin
         if (data_in_valid)
             pass <= 1;
-    end
-    always @ (posedge fast_clk or negedge rst) begin
-        if(!rst) bit_sel <= 0;
-        else if (data_in_valid) bit_sel <= 1;
-        else bit_sel <= bit_sel + 1'b1;
-    end
+    end    
     
-    assign sel = (data_in_valid)? m_lier[0] : m_lier[bit_sel];
+    assign sel = (data_in_valid)? m_lier[0] : m_lier[last_count];
     assign mul_tmp = (sel) ? m_cand : 0;
     assign tmp = (pass) ? (mul_tmp << BITWIDTH) + out_buf: 0;
      

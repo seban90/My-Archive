@@ -21,10 +21,11 @@
 
 
 module metronome(
-        fast_clk, rst, device_data_in_valid, data_in_valid, data_out_valid
+        fast_clk, rst, device_data_in_valid, data_in_valid, data_out_valid, last_count
     );
     input fast_clk, rst, device_data_in_valid;
     output data_out_valid,data_in_valid;
+    output [clog2(BITWIDTH)+1:0] last_count;
     
     parameter BITWIDTH = 8;
     
@@ -39,21 +40,18 @@ module metronome(
    
     reg [clog2(BITWIDTH)+1:0] count;
     always @ (posedge fast_clk or negedge rst) begin
-        if (!rst) begin
-            //count <= 2^(1<<BITWIDTH); //Test and modify to meet timing
+        if (!rst)
             count <= 0;
-        end
         else begin
             if (device_data_in_valid) begin
-                count <= count + 1'b1;
-                if (count == BITWIDTH-1) //Test and modify to meet timing
-                //if (count == BITWIDTH) //Test and modify to meet timing
-                    count <= 0;
+                if (count == BITWIDTH-1) count <= 0;
+                else count <= count + 1'b1;
             end
         end
     end
     assign data_in_valid = device_data_in_valid &&((count == 0) ? 1'b1 : 1'b0);
     assign data_out_valid = (count == (BITWIDTH-1)) ? 1'b1: 1'b0;
-    //assign data_out_valid = count == 0;
+    assign last_count = count;
+    
      
 endmodule
