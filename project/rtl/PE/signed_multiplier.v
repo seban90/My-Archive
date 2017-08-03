@@ -58,15 +58,9 @@ module signed_multiplier(
 	reg pass;
 	reg [BITWIDTH-1:0] a_reg, b_reg;
 	wire [BITWIDTH-1:0] mul; 
-	
-	reg inside_valid;
 
-	
 	initial pass <= 0;
-	always @ (posedge clk or negedge rst) begin
-		if (!rst) inside_valid <=0;
-		else inside_valid <= data_in_valid;
-	end
+
 	always @ (posedge clk) begin
 		if (data_in_valid) pass <= 1;
 	end

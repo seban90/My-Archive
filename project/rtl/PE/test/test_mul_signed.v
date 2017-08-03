@@ -20,7 +20,7 @@ function integer clog2;
     reg signed [BITWIDTH-1:0] din1[0:2<<BITWIDTH];
     reg signed [BITWIDTH-1:0] din2[0:2<<BITWIDTH];
     wire signed [2*BITWIDTH-1:0] dout;
-    reg [clog2(BITWIDTH):0] raddr1, raddr2;
+    reg [clog2(2<<BITWIDTH):0] raddr1, raddr2;
     
     always @ (posedge clk or negedge rst) begin
         if(!rst) begin 
@@ -29,11 +29,12 @@ function integer clog2;
         end
         else begin
             re <= 1;
-            raddr1 <= raddr1 + 1'b1;
-            if (raddr1 == (1 << BITWIDTH - 1'b1))
-                raddr2 <= raddr2 + 1'b1; 
-            if (raddr2 == (1<< BITWIDTH-1'b1))
-                $finish;
+            if (raddr1 == 2<<BITWIDTH) begin
+                raddr1 <= 0;
+                if (raddr2 == 2<<BITWIDTH) $finish;//raddr2 <= 0;
+                else raddr2 <= raddr2 + 1'b1;
+            end
+            else raddr1 <= raddr1 + 1'b1;
         end
     end
     integer i;
@@ -57,7 +58,7 @@ function integer clog2;
     
     always @ (data_out_valid) begin
         if (data_out_valid) begin
-            $display("a: %d, b: %d, result: %d", din1[raddr1-1], din2[raddr2], dout); 
+            $display("a: %d, b: %d, result: %d at addr1: %d, addr2: %d", din1[raddr1-1], din2[raddr2], dout ,raddr1-1, raddr2); 
             if (dout != din1[raddr1-1] * din2[raddr2]) begin
                 $display ("Error at Addr1: %d, Addr2,%d", raddr1, raddr2);
                 $finish;

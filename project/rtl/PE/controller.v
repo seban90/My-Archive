@@ -54,6 +54,7 @@ module controller(clk, rst, mod, weight_in_valid, weight_addr, process_enable);
             `DONE: begin
                 if (mod != mod_reg) next_state <= `INITIALIZE;
                 else begin
+                    init_count <= 0;
                     weight_in_valid <= 0;
                     process_enable <= 1;
                 end
