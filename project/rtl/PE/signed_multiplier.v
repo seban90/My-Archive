@@ -17,6 +17,7 @@ endmodule
 module signed_multiplier(
 	clk, rst, data_in_valid, 
 	a, b,
+	weight_int,
 	metronome_data_out_valid,
 	last_count, 
 	data_out_valid,
@@ -29,6 +30,7 @@ module signed_multiplier(
 		.data_in_valid(), 
 		.a(), 
 		.b(),
+		.weight_int(),
 		.metronome_data_out_valid(),
 		.last_count(), 
 		.data_out_valid(),
@@ -49,6 +51,7 @@ module signed_multiplier(
 	input clk, rst, data_in_valid;
 	input signed [BITWIDTH-1:0] a;
 	input signed [BITWIDTH-1:0] b;
+	input weight_int;
 	input [clog2(BITWIDTH)+1:0] last_count;
 	input metronome_data_out_valid;
 	
@@ -57,6 +60,7 @@ module signed_multiplier(
 	
 	reg pass;
 	reg [BITWIDTH-1:0] a_reg, b_reg;
+	reg [BITWIDTH-1:0] a_reg_reg;
 	wire [BITWIDTH-1:0] mul; 
 
 	initial pass <= 0;
@@ -75,6 +79,10 @@ module signed_multiplier(
 				b_reg <= b;
 			end
 		end
+	end
+	always @ (posedge clk or negedge rst) begin
+	   if (!rst) a_reg_reg <= 0;
+	   else a_reg_reg <= a_reg;
 	end
 	wire [BITWIDTH:0] add_tmp;
 	//reg [3*BITWIDTH-1:0] add_shift_reg;
@@ -100,6 +108,6 @@ module signed_multiplier(
             else data_out_valid <= metronome_data_out_valid;
     end
     //assign dout = (data_out_valid) ? add_shift_reg[2*BITWIDTH-1:0]:0;
-    assign dout = (data_out_valid) ? add_shift_reg_tmp[2*BITWIDTH-1:0]:0;
+    assign dout = (data_out_valid) ?((weight_int) ? (a_reg_reg << BITWIDTH):add_shift_reg_tmp[2*BITWIDTH-1:0]):0;
 	
 endmodule

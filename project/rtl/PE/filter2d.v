@@ -8,6 +8,7 @@ module filter2d (
 	data_in,
 	weight_addr,
 	weight_data,
+	int,
 	data_out,
 	data_out_valid,
 	cols,
@@ -24,6 +25,7 @@ module filter2d (
         .data_in(),
         .weight_addr(),
         .weight_data(),
+        .int(),
         .data_out(),
         .data_out_valid(),
         .cols(),
@@ -45,6 +47,7 @@ module filter2d (
 	input clk, fclk, rst, process_enable, data_in_valid, weight_in_valid;
 	input [BITWIDTH-1:0] data_in, weight_data;
 	input [3:0] weight_addr;
+	input int;
 	output [BITWIDTH-1:0] data_out; //8-bits output data 
 	output data_out_valid;
 	output [clog2(COLS):0] cols;
@@ -125,6 +128,7 @@ module filter2d (
         .data_in_valid(metronome_in_valid),  
         .din1(data_in), .din2(pixel_buffed_reg1), .din3(pixel_buffed_reg2),
         .weight1(weight_reg[8]), .weight2(weight_reg[7]), .weight3(weight_reg[6]), 
+        .weight_int(int),
         .metronome(metronome_out_valid), 
         .data_out_valid(row_filter_out_valid), 
         .last_count(last_count2), 
@@ -135,6 +139,7 @@ module filter2d (
         .data_in_valid(metronome_in_valid), 
         .din1(line_buffed_wire1), .din2(pixel_buffed_reg3), .din3(pixel_buffed_reg4),
         .weight1(weight_reg[5]), .weight2(weight_reg[4]), .weight3(weight_reg[3]),
+        .weight_int(int),
         .metronome(metronome_out_valid), 
         .data_out_valid(), 
         .last_count(last_count2), 
@@ -144,7 +149,8 @@ module filter2d (
         .clk(fclk), .rst(rst), 
         .data_in_valid(metronome_in_valid), 
         .din1(line_buffed_wire2), .din2(pixel_buffed_reg5), .din3(pixel_buffed_reg6),
-        .weight1(weight_reg[2]), .weight2(weight_reg[1]), .weight3(weight_reg[0]), 
+        .weight1(weight_reg[2]), .weight2(weight_reg[1]), .weight3(weight_reg[0]),
+        .weight_int(int), 
         .metronome(metronome_out_valid), 
         .data_out_valid(), 
         .last_count(last_count2), 

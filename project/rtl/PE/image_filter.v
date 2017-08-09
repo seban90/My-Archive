@@ -32,52 +32,95 @@ image_filter #(.BITWIDTH(BITWIDTH),.COLS(COLS),.ROWS(ROWS)) Image_fiter (
     endfunction
             
     input clk, fclk, rst, data_in_valid;
-    input [BITWIDTH-1:0] data_in;
+    input [3*BITWIDTH-1:0] data_in;
     input [2:0] mod;
     output data_out_valid, process_enable;
-    output [BITWIDTH-1:0] data_out;
+    output [3*BITWIDTH-1:0] data_out;
     output [clog2(COLS):0] x;
     output [clog2(ROWS):0] y;
     wire [3:0] weight_addr;
-    reg [BITWIDTH-1:0] weight_a[0:8], weight_b[0:8], weight_c[0:8];
-    wire [BITWIDTH-1:0] a, b, c, weight;
+    wire [BITWIDTH-1:0] data_r, data_g, data_b;
+    wire [BITWIDTH-1:0] data_r_out, data_g_out, data_b_out;
+    
+    reg [BITWIDTH:0] weight_a[0:8], weight_b[0:8], weight_c[0:8];
+    wire [BITWIDTH:0] a, b, c, weight;
     wire weight_in_valid;
     initial begin
         //3x3 gaussian filter
-        weight_a[0] <= 8'h10;  weight_a[1] <= 8'h20; weight_a[2] <= 8'h10;
-        weight_a[3] <= 8'h20;  weight_a[4] <= 8'h40; weight_a[5] <= 8'h20;
-        weight_a[6] <= 8'h10;  weight_a[7] <= 8'h20; weight_a[8] <= 8'h10;     
-        // 3x3 - not defined yet
-        weight_b[0] <= 8'h10;  weight_b[1] <= 8'h20; weight_b[2] <= 8'h10;
-        weight_b[3] <= 8'h20;  weight_b[4] <= 8'h40; weight_b[5] <= 8'h20;
-        weight_b[6] <= 8'h10;  weight_b[7] <= 8'h20; weight_b[8] <= 8'h10;
-        // 3x3 - not defined yet
-        weight_c[0] <= 8'h10;  weight_c[1] <= 8'h20; weight_c[2] <= 8'h10;
-        weight_c[3] <= 8'h20;  weight_c[4] <= 8'h40; weight_c[5] <= 8'h20;
-        weight_c[6] <= 8'h10;  weight_c[7] <= 8'h20; weight_c[8] <= 8'h10;
+        weight_a[0] <= 9'h010;  weight_a[1] <= 9'h020; weight_a[2] <= 9'h010;
+        weight_a[3] <= 9'h020;  weight_a[4] <= 9'h040; weight_a[5] <= 9'h020;
+        weight_a[6] <= 9'h010;  weight_a[7] <= 9'h020; weight_a[8] <= 9'h010;     
+        // 3x3 - Sharpness filter
+        weight_b[0] <= 9'h0e4;  weight_b[1] <= 9'h0e4; weight_b[2] <= 9'h0e4;
+        weight_b[3] <= 9'h0e4;  weight_b[4] <= 9'h100; weight_b[5] <= 9'h0e4;
+        weight_b[6] <= 9'h0e4;  weight_b[7] <= 9'h0e4; weight_b[8] <= 9'h0e4;
+        // 3x3 - Laplacian filter - Edge detect
+        weight_c[0] <= 9'h0e0;  weight_c[1] <= 9'h0e0; weight_c[2] <= 9'h0e0;
+        weight_c[3] <= 9'h0e0;  weight_c[4] <= 9'h100; weight_c[5] <= 9'h0e0;
+        weight_c[6] <= 9'h0e0;  weight_c[7] <= 9'h0e0; weight_c[8] <= 9'h0e0;
         
     end
     
     assign a = weight_a[weight_addr];
     assign b = weight_b[weight_addr];
     assign c = weight_c[weight_addr];
+    assign data_r = data_in[3*BITWIDTH-1:2*BITWIDTH];
+    assign data_g = data_in[2*BITWIDTH-1:BITWIDTH];
+    assign data_b = data_in[BITWIDTH-1:0];
     
     assign weight =  (mod == 3'b001) ? a : (mod == 3'b010)? b: (mod == 3'b100) ?  c:0;
     
+    //wire [clog2(COLS):0] g_x, b_x;
+    //w/ire [clog2(ROWS):0] g_y, b_y;
+    
     controller control(clk, rst, mod, weight_in_valid, weight_addr, process_enable);
-    filter2d #(.BITWIDTH(BITWIDTH),.COLS(COLS),.ROWS(ROWS)) inst(
+    filter2d #(.BITWIDTH(BITWIDTH),.COLS(COLS),.ROWS(ROWS)) inst_r(
             .clk(clk), 
             .fclk(fclk), 
             .rst(rst), 
             .process_enable(process_enable),
             .data_in_valid(data_in_valid),
             .weight_in_valid(weight_in_valid),
-            .data_in(data_in),
+            .data_in(data_r),
             .weight_addr(weight_addr),
-            .weight_data(weight),
-            .data_out(data_out),
+            .weight_data(weight[BITWIDTH-1:0]),
+            .int(weight[BITWIDTH]),
+            .data_out(data_r_out),
             .data_out_valid(data_out_valid),
             .cols(x),
             .rows(y)
         );
+    filter2d #(.BITWIDTH(BITWIDTH),.COLS(COLS),.ROWS(ROWS)) inst_g(
+            .clk(clk), 
+            .fclk(fclk), 
+            .rst(rst), 
+            .process_enable(process_enable),
+            .data_in_valid(data_in_valid),
+            .weight_in_valid(weight_in_valid),
+            .data_in(data_g),
+            .weight_addr(weight_addr),
+            .weight_data(weight[BITWIDTH-1:0]),
+            .int(weight[BITWIDTH]),
+            .data_out(data_g_out),
+            .data_out_valid(),
+            .cols(),
+            .rows()
+            );
+    filter2d #(.BITWIDTH(BITWIDTH),.COLS(COLS),.ROWS(ROWS)) inst_b(
+            .clk(clk), 
+            .fclk(fclk), 
+            .rst(rst), 
+            .process_enable(process_enable),
+            .data_in_valid(data_in_valid),
+            .weight_in_valid(weight_in_valid),
+            .data_in(data_b),
+            .weight_addr(weight_addr),
+            .weight_data(weight[BITWIDTH-1:0]),
+            .int(weight[BITWIDTH]),
+            .data_out(data_b_out),
+            .data_out_valid(),
+            .cols(),
+            .rows()
+    );
+    assign data_out = {data_r_out, data_g_out, data_b_out};
 endmodule
