@@ -1,0 +1,1 @@
+`define BITWIDTH 8
