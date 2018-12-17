@@ -6,6 +6,8 @@ class model_seq_item_c extends uvm_sequence_item;
 	rand bit                 TYPE;
 	rand bit [`BITWIDTH-1:0] DATA;
 
+	constraint value_type {TYPE inside {0,1};}
+
 	`uvm_object_utils(model_seq_item_c)
 	function new(string name="model_seq_item");
 		super.new(name);
@@ -14,13 +16,20 @@ endclass: model_seq_item_c
 
 class model_seq_c extends uvm_sequence # (model_seq_item_c);
 	`uvm_object_utils(model_seq_c)
+	bit [31:0] test_num;
 	model_seq_item_c items;
 	function new(string name="model_seq_item");
 		super.new(name);
 	endfunction
 	task body;
-		start_item(items);
-		finish_item(items);
+		// the num of Simulataon
+		repeat (test_num) begin
+			start_item(items);
+			items.randomize() with {
+				TYPE == 0;
+			};
+			finish_item(items);
+		end
 	endtask
 endclass: model_seq_c
 

@@ -1,5 +1,5 @@
-`ifndef UVM_INTERFACE_DEF
-`define UVM_INTERFACE_DEF
+`ifndef MODEL_INTERFACE_DEF
+`define MODEL_INTERFACE_DEF
 `include "params_def.svh"
 interface model_vif (
 	 input bit i_CLK

@@ -1,0 +1,13 @@
+import uvm_pkg::*;
+import model_pkg::*;
+
+model_vif vif(g_clock, g_resetn);
+
+model_wrapper dut (
+	.vif(vif)
+);
+initial begin
+	uvm_config_db#(virtual model_vif)::set(null, "uvm_test_top", "model_vif", vif);
+	run_test("test_c");
+	$finish;
+end

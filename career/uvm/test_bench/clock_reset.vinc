@@ -1,0 +1,14 @@
+`define CLOCK_SET(name,t) \
+	reg name;
+	always #((1.0/t*1000)/2) name = ~name;
+
+	reg g_resetn;
+
+	`CLOCK_SET(g_clock, 100)
+
+	initial begin
+		g_clock  = 0;
+		g_resetn = 0;
+		repeat (10) @ (posedge g_clock);
+		g_resetn = 1;
+	end
