@@ -8,11 +8,15 @@ def setup_matching(ip_name, file_name, path, output_dir=None):
 	template_path = path+'/'+'template'
 	output_filename = ip_name +'_'+ file_name 
 	template_file = template_path + '/'+file_name
-	output_verilog_dir = output_dir+'/uvm_model'
-	output_c_dir = output_dir+'/c_model'
+	output_verilog_dir = output_dir+'/sim/uvm_model'
+	output_c_dir = output_dir+'/sim/c_model'
 
 	patt = re.compile(r'[\w_]+\.[sv]+')
 	matched = patt.match(file_name)
+
+	if file_name == "test_bench":
+		return
+
 	f = io.open(template_file, mode="rt", encoding="utf-8")
 	s = str(f.read())
 	contents = re.sub(r'MODEL',ip_name.upper(), s)
@@ -24,7 +28,7 @@ def setup_matching(ip_name, file_name, path, output_dir=None):
 		output_verilog_dir = output_dir
 	elif file_name == "pkg.vinc":
 		output_filename = file_name
-		output_verilog_dir = output_dir+'/'+'test_bench'
+		output_verilog_dir = output_dir+'/sim/'+'test_bench'
 
 	elif file_name == "tb_top.sv":
 		output_filename = file_name
@@ -42,7 +46,7 @@ def setup_matching(ip_name, file_name, path, output_dir=None):
 
 def packaging(ip_name, path):
 	#output_filename = ip_name +'_'+ file_name 
-	uvm_path = path+'/'+'uvm_model'
+	uvm_path = path+'/sim/'+'uvm_model'
 	files = os.listdir(uvm_path)
 	f = io.open("%s/%s"%(uvm_path, "%s_pkg.sv"%ip_name), mode="wt", encoding="utf=8")
 	contents  = ""
@@ -66,6 +70,7 @@ def make_dut(ip_name, output_dir):
 	rtl_path = output_dir + '/rtl'
 	f = io.open("%s/%s" %(rtl_path, "dut_wrapper.sv"), mode="wt", encoding="utf-8")
 	contents = ""
+	contents += "import %s_pkg::*;\n" % ip_name
 	contents += "module %s_wrapper (\n" % ip_name
 	contents += "\t%s_vif vif\n" % ip_name
 	contents += ");\n"
