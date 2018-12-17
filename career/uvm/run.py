@@ -25,7 +25,7 @@ def setup_matching(ip_name, file_name, path, output_dir=None):
 	f.close()
 
 	if file_name == "top.sv" or file_name == "vseq.sv" :
-		output_verilog_dir = output_dir
+		output_verilog_dir = output_dir+'/sim'
 	elif file_name == "pkg.vinc":
 		output_filename = file_name
 		output_verilog_dir = output_dir+'/sim/'+'test_bench'
@@ -78,6 +78,77 @@ def make_dut(ip_name, output_dir):
 	f.write(unicode(contents))
 	f.close()
 
+def make_vcode (ip_name, path):
+	rtl_path = path + '/rtl'
+	sim_path = path + '/sim'
+	tb_path = sim_path + '/test_bench'
+	uvm_path = sim_path + '/uvm_model'
+	f = io.open("%s/%s"%(rtl_path, "vcode.f"), mode="wt", encoding="utf-8")
+	contents = ""
+	contents += "-INCDIR ${IP_DIR}/rtl\n\n"
+	contents += "${IP_DIR}/rtl/dut_wrapper.sv\n"
+	contents += "${IP_DIR}/rtl/dut.v"
+	f.write(unicode(contents))
+	f.close()
+	f = io.open("%s/%s"%(sim_path, "vcode.f"), mode="wt", encoding="utf-8")
+	contents = "-INCDIR ${IP_DIR}/sim\n\n"
+	contents += "-f ${IP_DIR}/sim/uvm_model/vcode.f\n\n"
+	contents += "${IP_DIR}/sim/%s_top.sv\n" %(ip_name)
+	contents += "${IP_DIR}/sim/%s_vseq.sv\n" %(ip_name)
+	contents += "-f ${IP_DIR}/sim/test_bench/vcode.f\n\n"
+	f.write(unicode(contents))
+	f.close()
+	f = io.open("%s/%s"%(tb_path, "vcode.f"), mode="wt", encoding="utf-8")
+	contents = "-INCDIR ${IP_DIR}/sim/test_bench\n\n"
+	contents += "${IP_DIR}/sim/test_bench/tb_top.sv\n\n"
+	f.write(unicode(contents))
+	f.close()
+	f = io.open("%s/%s"%(uvm_path, "vcode.f"), mode="wt", encoding="utf-8")
+	contents = "-INCDIR ${IP_DIR}/sim/uvm_model\n\n"
+	contents += "${IP_DIR}/sim/uvm_model/%s_pkg.sv\n" % ip_name
+	f.write(unicode(contents))
+	f.close()
+
+def make_makefile(ip_name, path):
+	f = io.open("%s/%s"%(path, "makefile"), mode="wt", encoding="utf-8")
+	contents = ""
+	contents += "IP_DIR:= $(CURDIR)\n"
+	contents += "fsdb:= 1\n"
+	contents += "dump:= 1\n"
+	contents += "\n\n\n"
+	contents += "export IP_DIR\n\n\n"
+	contents += "all:\n"
+	contents += "\t@echo \"=========================================================\"\n"
+	contents += "\t@echo \"make sim        ---> sim with fsdb dump files\"\n"
+	contents += "\t@echo \"make sim fsdb=0 ---> sim with  shm dump files\"\n"
+	contents += "\t@echo \"make sim dump=0 ---> sim without   dump files\"\n"
+	contents += "\t@echo \"=========================================================\"\n"
+	contents += "\n\n\n"
+	contents += ".PHONY: sim\n"
+	contents += "sim:\n"
+	contents += "\t@if [! -e ./outputs ]; then \\\n\t\tmkdir outputs; \\\n"
+	contents += "\tfi\n"
+	contents += "\tmake cc\n"
+	contents += "ifeq (${dump}, 0)\n"
+	contents += "\tcd outputs; time irun -access +rwc -uvm -timescale 1ns/1ps -f ${IP_DIR}/sim/vcode.f -sv_lib ${IP_DIR}/outputs/sv_lib.so\n"
+	contents += "else\n"
+	contents += "ifeq (${fsdb}, 0)\n"
+	contents += "\tcd outputs; time irun -access +rwc -uvm -timescale 1ns/1ps -f ${IP_DIR}/sim/vcode.f -sv_lib ${IP_DIR}/outputs/sv_lib.so -input ncsim_fsdb.tcl\n"
+	contents += "else\n"
+	contents += "\tcd outputs; time irun -access +rwc -uvm -timescale 1ns/1ps -f ${IP_DIR}/sim/vcode.f -sv_lib ${IP_DIR}/outputs/sv_lib.so -input ncsim_shm.tcl\n"
+	contents += "endif\n"
+	contents += "endif\n"
+	contents += "\n\n\n"
+	contents += "cc:\n"
+	contents += "\tcd ${IP_DIR}/sim/c_model; time gcc -shared -o sv_lib.so %s_c_func.c -fPIC\n" % (ip_name)
+	contents += "\tcp ${IP_DIR}/sim/c_model/sv_lib.so ${IP_DIR}/outputs\n"
+	contents += "\n\n\n"
+	contents += "clean:\n"
+	contents += "\trm -rf outputs\n"
+	f.write(unicode(contents))
+	f.close()
+
+
 def run(path=None, ip_name=None):
 	template_path = '%s/template' % path
 	output_dir = path+'/'+ip_name
@@ -87,7 +158,9 @@ def run(path=None, ip_name=None):
 		setup_matching(ip_name, files[i], path, output_dir)
 	
 	packaging(ip_name, output_dir)
-	make_dut (ip_name, output_dir)
+	make_dut(ip_name, output_dir)
+	make_makefile(ip_name, output_dir)
+	make_vcode(ip_name, output_dir)
 		
 
 if __name__ == "__main__":
