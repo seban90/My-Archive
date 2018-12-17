@@ -62,7 +62,7 @@ def packaging(ip_name, path):
 	contents += "package %s_pkg;\n"% ip_name
 	contents += "\timport uvm_pkg::*;\n"
 	for g in files:
-		contents += "\t`include \"%s\";\n" % g
+		contents += "\t`include \"%s\"\n" % g
 	contents += "endpackage: %s_pkg\n"% ip_name
 	f.write(unicode(contents))
 	f.close()
@@ -126,7 +126,7 @@ def make_makefile(ip_name, path):
 	contents += "\n\n\n"
 	contents += ".PHONY: sim\n"
 	contents += "sim:\n"
-	contents += "\t@if [! -e ./outputs ]; then \\\n\t\tmkdir outputs; \\\n"
+	contents += "\t@if [ ! -e ./outputs ]; then \\\n\t\tmkdir outputs; \\\n"
 	contents += "\tfi\n"
 	contents += "\tmake cc\n"
 	contents += "ifeq (${dump}, 0)\n"
