@@ -2,7 +2,7 @@
 `define MODEL_SCOREBOARD_DEF
 `include "params_def.svh"
 
-import "DPI-C" context function c_model_func(input int i_data);
+import "DPI-C" context function int unsigned c_model_func(input int unsigned i_data);
 
 class model_scoreboard_c extends uvm_scoreboard;
 	uvm_analysis_export   # (model_seq_item_c) i_data_sb_port;
@@ -37,14 +37,14 @@ class model_scoreboard_c extends uvm_scoreboard;
 		model_seq_item_c o_data;
 		forever begin
 			//////////////////////////////////////////////////////////////////////////////
-			phase.raise_objection(this, "SCOREBOARD IN PROGRESS");
-			//////////////////////////////////////////////////////////////////////////////
 			// Get data from monitor
 			//////////////////////////////////////////////////////////////////////////////
 			i_data_sb_fifo.get(i_data);
 			i_data_fifo.push_back(i_data);
 			o_data_sb_fifo.get(o_data);
 			o_data_fifo.push_back(o_data);
+			//////////////////////////////////////////////////////////////////////////////
+			phase.raise_objection(this, "SCOREBOARD IN PROGRESS");
 			//////////////////////////////////////////////////////////////////////////////
 			void'(compare_data(i_data_fifo.pop_front(), o_data_fifo.pop_front()));
 			//////////////////////////////////////////////////////////////////////////////

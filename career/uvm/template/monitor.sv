@@ -18,7 +18,6 @@ class model_monitor_c extends uvm_monitor;
 	endfunction
 	virtual function void build_phase(uvm_phase phase);
 		super.build_phase(phase);
-		items = model_seq_item_c::type_id::create("monitor_item");
 		if (!uvm_config_db#(virtual model_vif)::get(this,"","model_vif", vif))
 			`uvm_error("DEBUG", $psprintf("%s [%3d] VIRTUAL INTERFACE NOT FOUND", `__FILE__, `__LINE__))
 		if (!uvm_config_db#(model_config_c)::get(this,"","model_cfg", cfg))
@@ -30,7 +29,6 @@ class model_monitor_c extends uvm_monitor;
 	endfunction
 
 	task reset;
-		@ (negedge this.vif.i_RSTN);
 		@ (posedge this.vif.i_RSTN);
 	endtask
 	task i_data;
@@ -66,6 +64,7 @@ class model_monitor_c extends uvm_monitor;
 		super.run_phase(phase);
 		reset;
 		forever begin
+			items = model_seq_item_c::type_id::create("monitor_item");
 			collector;
 			mon.write(items);
 		end

@@ -24,7 +24,11 @@ class model_driver_c extends uvm_driver # (model_seq_item_c);
 		super.connect_phase(phase);
 	endfunction 
 	task reset;
-		@(negedge this.vif.i_RSTN);
+		this.vif.i_VALID = 0;
+		this.vif.i_DATA = 0;
+		if (cfg.is_handshake == 1)
+			this.vif.o_READY = 1;
+
 		@(posedge this.vif.i_RSTN);
 	endtask
 	task tx(input bit [`BITWIDTH-1:0] d);
@@ -57,9 +61,7 @@ class model_driver_c extends uvm_driver # (model_seq_item_c);
 	task run_phase(uvm_phase phase);
 		reset;
 		forever begin
-			`uvm_info("DEBUG", "WAITING ITEM", UVM_LOW)
 			seq_item_port.get_next_item(req);
-			`uvm_info("DEBUG", "WAITING ITEM", UVM_LOW)
 			case (req.TYPE)
 				0: tx(req.DATA);
 				1: rx(req.DATA);

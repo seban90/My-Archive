@@ -77,12 +77,13 @@ def make_dut(ip_name, output_dir):
 	f = io.open("%s/%s" %(rtl_path, "dut_wrapper.sv"), mode="wt", encoding="utf-8")
 	contents = ""
 	contents += "import %s_pkg::*;\n" % ip_name
+	contents += "`include \"%s_params_def.svh\"\n" % ip_name
 	contents += "module %s_wrapper # (parameter BITWIDTH=`BITWIDTH) (\n" % ip_name
 	contents += "\t%s_vif vif\n" % ip_name
 	contents += ");\n"
 	contents += "\t%s #(BITWIDTH) dut (\n" % ip_name
 	contents += "\t\t .i_CLK   (vif.i_CLK  )\n"
-	contents += "\t\t,.i_nRST  (vif.i_nRST )\n"
+	contents += "\t\t,.i_nRST  (vif.i_RSTN )\n"
 	contents += "\t\t,.i_DATA  (vif.i_DATA )\n"
 	contents += "\t\t,.i_VALID (vif.i_VALID)\n"
 	contents += "\t\t//remove '//' if module is based on a handshake\n"
@@ -92,6 +93,7 @@ def make_dut(ip_name, output_dir):
 	contents += "\t\t//remove '//' if module is based on a handshake\n"
 	contents += "\t\t//,.o_READY (vif.o_READY)\n"
 	contents += "\t);\n"
+	contents += "`include \"%s_params_undef.svh\"\n" % ip_name
 	contents += "endmodule\n"
 	f.write(unicode(contents))
 	f.close()
