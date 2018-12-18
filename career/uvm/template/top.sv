@@ -20,13 +20,14 @@ class test_c extends uvm_test;
 	virtual function void build_phase(uvm_phase phase);
 		super.build_phase(phase);
 		if (!uvm_config_db#(virtual model_vif)::get(this, "", "model_vif", vif))
-			`uvm_error("DEBUG", $psprinf("%s [%3d] VIRTUAL INTERFACE NOT FOUND", `__FILE__, `__LINE__))
+			`uvm_error("DEBUG", $psprintf("%s [%3d] VIRTUAL INTERFACE NOT FOUND", `__FILE__, `__LINE__))
 		model_agent = model_agent_c::type_id::create("model_agent", this);
-		model_vseq = model_vseq_c::type_id::create("model_vseq", this);
+		uvm_config_db#(virtual model_vif)::set(this, "model_agent", "model_vif", vif);
+		vseq = model_vseq_c::type_id::create("model_vseq", this);
 	endfunction
 
 	virtual function void connect_phase(uvm_phase phase);
-		super.connect_phase(phase):
+		super.connect_phase(phase);
 	endfunction
 	
 	virtual function void start_of_simulation_phase(uvm_phase phase);

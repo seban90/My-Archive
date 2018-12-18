@@ -19,7 +19,7 @@ class model_monitor_c extends uvm_monitor;
 		super.build_phase(phase);
 		items = model_seq_item_c::type_id::create("monitor_item");
 		if (!uvm_config_db#(virtual model_vif)::get(this,"","model_vif", vif))
-			`uvm_error("DEBUG", $psprinf("%s [%3d] VIRTUAL INTERFACE NOT FOUND", `__FILE__, `__LINE__))
+			`uvm_error("DEBUG", $psprintf("%s [%3d] VIRTUAL INTERFACE NOT FOUND", `__FILE__, `__LINE__))
 	endfunction
 	virtual function void connect_phase(uvm_phase phase);
 		super.connect_phase(phase);

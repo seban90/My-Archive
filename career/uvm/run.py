@@ -45,14 +45,10 @@ def setup_matching(ip_name, file_name, path, output_dir=None):
 	return
 
 def packaging(ip_name, path):
-	#output_filename = ip_name +'_'+ file_name 
-	uvm_path = path+'/sim/'+'uvm_model'
-	files = os.listdir(uvm_path)
+	uvm_path = path + '/sim/uvm_model'
 	f = io.open("%s/%s"%(uvm_path, "%s_pkg.sv"%ip_name), mode="wt", encoding="utf=8")
 	contents  = ""
-	contents += "// Delete *.svh\n"
 	contents += "// Please rearrange like this\n"
-	contents += "// vif.sv\n"
 	contents += "// sequence.sv\n"
 	contents += "// sequencer.sv\n"
 	contents += "// driver.sv\n"
@@ -61,22 +57,47 @@ def packaging(ip_name, path):
 	contents += "// agent.sv\n\n"
 	contents += "package %s_pkg;\n"% ip_name
 	contents += "\timport uvm_pkg::*;\n"
-	for g in files:
-		contents += "\t`include \"%s\"\n" % g
-	contents += "endpackage: %s_pkg\n"% ip_name
+	contents += "\t`timescale 1ns/1ps\n"
+	contents += "\t`include \"uvm_macros.svh\"\n"
+	contents += "\t`include \"%s_params_def.svh\"\n" % ip_name
+	contents += "\t`include \"%s_params_undef.svh\"\n" % ip_name
+	contents += "\t`include \"%s_sequence.sv\"\n" % ip_name
+	contents += "\t`include \"%s_sequencer.sv\"\n" % ip_name
+	contents += "\t`include \"%s_driver.sv\"\n" % ip_name
+	contents += "\t`include \"%s_monitor.sv\"\n" % ip_name
+	contents += "\t`include \"%s_scoreboard.sv\"\n" % ip_name
+	contents += "\t`include \"%s_agent.sv\"\n" % ip_name
+	contents += "endpackage: %s_pkg\n" % ip_name
 	f.write(unicode(contents))
 	f.close()
+
 def make_dut(ip_name, output_dir):
 	rtl_path = output_dir + '/rtl'
 	f = io.open("%s/%s" %(rtl_path, "dut_wrapper.sv"), mode="wt", encoding="utf-8")
 	contents = ""
 	contents += "import %s_pkg::*;\n" % ip_name
-	contents += "module %s_wrapper (\n" % ip_name
+	contents += "module %s_wrapper # (parameter BITWIDTH=8) (\n" % ip_name
 	contents += "\t%s_vif vif\n" % ip_name
+	contents += ");\n"
+	contents += "\t%s #(BITWIDTH) dut (\n" % ip_name
+	contents += "\t);\n"
+	contents += "endmodule\n"
+	f.write(unicode(contents))
+	f.close()
+	f = io.open("%s/%s" %(rtl_path, "dut.v"), mode="wt", encoding="utf-8")
+	contents = ""
+	contents += "module %s # (parameter BITWIDTH=8) (\n" % ip_name
+	contents += "\t input                 i_CLK\n"
+	contents += "\t,input                 i_nRST\n"
+	contents += "\t,input  [BITWIDTH-1:0] i_DATA\n"
+	contents += "\t,input                 i_VALID\n"
+	contents += "\t,output [BITWIDTH-1:0] o_DATA\n"
+	contents += "\t,output                o_VALID\n"
 	contents += ");\n"
 	contents += "endmodule\n"
 	f.write(unicode(contents))
 	f.close()
+
 
 def make_vcode (ip_name, path):
 	rtl_path = path + '/rtl'
@@ -93,9 +114,10 @@ def make_vcode (ip_name, path):
 	f = io.open("%s/%s"%(sim_path, "vcode.f"), mode="wt", encoding="utf-8")
 	contents = "-INCDIR ${IP_DIR}/sim\n\n"
 	contents += "-f ${IP_DIR}/sim/uvm_model/vcode.f\n\n"
-	contents += "${IP_DIR}/sim/%s_top.sv\n" %(ip_name)
 	contents += "${IP_DIR}/sim/%s_vseq.sv\n" %(ip_name)
+	contents += "${IP_DIR}/sim/%s_top.sv\n" %(ip_name)
 	contents += "-f ${IP_DIR}/sim/test_bench/vcode.f\n\n"
+	contents += "-f ${IP_DIR}/rtl/vcode.f\n\n"
 	f.write(unicode(contents))
 	f.close()
 	f = io.open("%s/%s"%(tb_path, "vcode.f"), mode="wt", encoding="utf-8")
@@ -106,6 +128,7 @@ def make_vcode (ip_name, path):
 	f = io.open("%s/%s"%(uvm_path, "vcode.f"), mode="wt", encoding="utf-8")
 	contents = "-INCDIR ${IP_DIR}/sim/uvm_model\n\n"
 	contents += "${IP_DIR}/sim/uvm_model/%s_pkg.sv\n" % ip_name
+	contents += "${IP_DIR}/sim/uvm_model/%s_vif.sv\n" % ip_name
 	f.write(unicode(contents))
 	f.close()
 
@@ -130,12 +153,12 @@ def make_makefile(ip_name, path):
 	contents += "\tfi\n"
 	contents += "\tmake cc\n"
 	contents += "ifeq (${dump}, 0)\n"
-	contents += "\tcd outputs; time irun -access +rwc -uvm -timescale 1ns/1ps -f ${IP_DIR}/sim/vcode.f -sv_lib ${IP_DIR}/outputs/sv_lib.so\n"
+	contents += "\tcd outputs; time irun -access +rwc -sv -uvm -timescale 1ns/1ps -f ${IP_DIR}/sim/vcode.f -sv_lib ${IP_DIR}/outputs/sv_lib.so\n"
 	contents += "else\n"
 	contents += "ifeq (${fsdb}, 0)\n"
-	contents += "\tcd outputs; time irun -access +rwc -uvm -timescale 1ns/1ps -f ${IP_DIR}/sim/vcode.f -sv_lib ${IP_DIR}/outputs/sv_lib.so -input ncsim_fsdb.tcl\n"
+	contents += "\tcd outputs; time irun -access +rwc -sv -uvm -timescale 1ns/1ps -f ${IP_DIR}/sim/vcode.f -sv_lib ${IP_DIR}/outputs/sv_lib.so -input ncsim_fsdb.tcl\n"
 	contents += "else\n"
-	contents += "\tcd outputs; time irun -access +rwc -uvm -timescale 1ns/1ps -f ${IP_DIR}/sim/vcode.f -sv_lib ${IP_DIR}/outputs/sv_lib.so -input ncsim_shm.tcl\n"
+	contents += "\tcd outputs; time irun -access +rwc -sv -uvm -timescale 1ns/1ps -f ${IP_DIR}/sim/vcode.f -sv_lib ${IP_DIR}/outputs/sv_lib.so -input ncsim_shm.tcl\n"
 	contents += "endif\n"
 	contents += "endif\n"
 	contents += "\n\n\n"

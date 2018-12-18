@@ -18,16 +18,20 @@ class model_seq_c extends uvm_sequence # (model_seq_item_c);
 	`uvm_object_utils(model_seq_c)
 	bit [31:0] test_num;
 	model_seq_item_c items;
-	function new(string name="model_seq_item");
+	function new(string name="model_seq");
 		super.new(name);
+		items = model_seq_item_c::type_id::create("model_seq_item");
 	endfunction
 	task body;
 		// the num of Simulataon
 		repeat (test_num) begin
 			start_item(items);
-			items.randomize() with {
-				TYPE == 0;
-			};
+			void'(
+
+				items.randomize() with {
+					TYPE == 0;
+				}
+			);
 			finish_item(items);
 		end
 	endtask

@@ -13,12 +13,12 @@ class model_vseq_c extends uvm_sequence#(uvm_sequence_item);
 	endfunction
 
 	task body;
-		if (!uvm_config_db#(model_seqr_c)::get(null, "uvm_test_top.model_agent", "model_seqr", model_seqr)
-			`uvm_error("DEBUG", $psprinf("%s [%3d] SEQEUNCER NOT FOUND", `__FILE__, `__LINE__))
+		if (!uvm_config_db#(model_seqr_c)::get(null, "uvm_test_top.model_agent", "model_seqr", model_seqr))
+			`uvm_error("DEBUG", $psprintf("%s [%3d] SEQEUNCER NOT FOUND", `__FILE__, `__LINE__))
 		
 		// set the number of test stimulus
 		model_seq.test_num = 10;
-		model_seq.start(this.model_seqr);
+		model_seq.start(this.model_seqr, this);
 
 	endtask
 

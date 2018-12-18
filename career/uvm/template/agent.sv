@@ -15,7 +15,7 @@ class model_agent_c extends uvm_agent;
 		super.new(name, parent);
 	endfunction
 
-	virtual function void build_phase(uvm_phase phase)
+	virtual function void build_phase(uvm_phase phase);
 		super.build_phase(phase);
 		drv       = model_driver_c::type_id::create("model_driver", this);
 		seqr      = model_seqr_c::type_id::create("model_seqr", this);
@@ -26,9 +26,9 @@ class model_agent_c extends uvm_agent;
 		i_monitor.monitor_type = 0;
 		o_monitor.monitor_type = 1;
 
-		uvm_config_db#(model_seqr_c)::set("","model_seqr",seqr);
+		uvm_config_db#(model_seqr_c)::set(this, "","model_seqr",seqr);
 		if (!uvm_config_db#(virtual model_vif)::get(this,"","model_vif", vif))
-			`uvm_error("DEBUG", $psprinf("%s [%3d] VIRTUAL INTERFACE NOT FOUND", `__FILE__, `__LINE__))
+			`uvm_error("DEBUG", $psprintf("%s [%3d] VIRTUAL INTERFACE NOT FOUND", `__FILE__, `__LINE__))
 		uvm_config_db#(virtual model_vif)::set(this,"model_driver", "model_vif", vif);
 		uvm_config_db#(virtual model_vif)::set(this,"model_seqr", "model_vif", vif);
 		uvm_config_db#(virtual model_vif)::set(this,"model_i_monitor", "model_vif", vif);
@@ -36,7 +36,7 @@ class model_agent_c extends uvm_agent;
 
 	endfunction
 
-	virtual function void connect_phase(uvm_phase phase)
+	virtual function void connect_phase(uvm_phase phase);
 		super.connect_phase(phase);
 		i_monitor.mon.connect(sb.i_data_sb_port);
 		o_monitor.mon.connect(sb.o_data_sb_port);

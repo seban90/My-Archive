@@ -1,5 +1,5 @@
 `define CLOCK_SET(name,t) \
-	reg name;
+	reg name; \
 	always #((1.0/t*1000)/2) name = ~name;
 
 	reg g_resetn;

@@ -41,20 +41,20 @@ class model_scoreboard_c extends uvm_scoreboard;
 			//////////////////////////////////////////////////////////////////////////////
 			// Get data from monitor
 			//////////////////////////////////////////////////////////////////////////////
-			i_data_fifo.get(i_data);
+			i_data_sb_fifo.get(i_data);
 			i_data_fifo.push_back(i_data);
-			o_data_fifo.get(o_data);
+			o_data_sb_fifo.get(o_data);
 			o_data_fifo.push_back(o_data);
 			//////////////////////////////////////////////////////////////////////////////
-			compare_data(i_data_fifo.pop_front(), o_data_fifo.pop_front());
+			void'(compare_data(i_data_fifo.pop_front(), o_data_fifo.pop_front()));
 			//////////////////////////////////////////////////////////////////////////////
 			phase.drop_objection(this, "SCOREBOARD FINISHED");
 			//////////////////////////////////////////////////////////////////////////////
 		end
 	endtask
 	function compare_data(
-		input model_seq_item_c i_data_seq
-		input model_seq_item_c o_data_seq
+		 input model_seq_item_c i_data_seq
+		,input model_seq_item_c o_data_seq
 	);
 		int unsigned i_data, o_data, g_data;
 		i_data = i_data_seq.DATA;

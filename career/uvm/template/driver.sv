@@ -1,6 +1,6 @@
 `ifndef MODEL_DRIVER_DEF
 `define MODEL_DRIVER_DEF
-`include "params_def.sv"
+`include "params_def.svh"
 class model_driver_c extends uvm_driver # (model_seq_item_c);
 	virtual model_vif   vif;
 	model_seq_item_c    item;
@@ -14,7 +14,7 @@ class model_driver_c extends uvm_driver # (model_seq_item_c);
 	virtual function void build_phase(uvm_phase phase);
 		super.build_phase(phase);
 		if (!uvm_config_db#(virtual model_vif)::get(this,"","model_vif", vif))
-			`uvm_error("DEBUG", $psprinf("%s [%3d] VIRTUAL INTERFACE NOT FOUND", `__FILE__, `__LINE__))
+			`uvm_error("DEBUG", $psprintf("%s [%3d] VIRTUAL INTERFACE NOT FOUND", `__FILE__, `__LINE__))
 	endfunction
 	virtual function void connect_phase(uvm_phase phase);
 		super.connect_phase(phase);
@@ -42,7 +42,7 @@ class model_driver_c extends uvm_driver # (model_seq_item_c);
 		reset;
 		forever begin
 			`uvm_info("DEBUG", "WAITING ITEM", UVM_LOW)
-			seq_item_port.get_next_item(req)
+			seq_item_port.get_next_item(req);
 			`uvm_info("DEBUG", "WAITING ITEM", UVM_LOW)
 			case (req.TYPE)
 				0: tx(req.DATA);
@@ -53,5 +53,5 @@ class model_driver_c extends uvm_driver # (model_seq_item_c);
 	endtask
 
 endclass: model_driver_c
-`include "params_undef.sv"
+`include "params_undef.svh"
 `endif
