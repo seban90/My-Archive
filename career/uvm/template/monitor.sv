@@ -5,6 +5,7 @@ class model_monitor_c extends uvm_monitor;
 
 	virtual model_vif   vif;
 	model_seq_item_c    items;
+	model_config_c      cfg;
 	bit                 monitor_type;
 
 	uvm_analysis_port#(model_seq_item_c) mon;
@@ -20,6 +21,9 @@ class model_monitor_c extends uvm_monitor;
 		items = model_seq_item_c::type_id::create("monitor_item");
 		if (!uvm_config_db#(virtual model_vif)::get(this,"","model_vif", vif))
 			`uvm_error("DEBUG", $psprintf("%s [%3d] VIRTUAL INTERFACE NOT FOUND", `__FILE__, `__LINE__))
+		if (!uvm_config_db#(model_config_c)::get(this,"","model_cfg", cfg))
+			`uvm_error("DEBUG", $psprintf("%s [%3d] MODEL CONFIG NOT FOUND", `__FILE__, `__LINE__))
+
 	endfunction
 	virtual function void connect_phase(uvm_phase phase);
 		super.connect_phase(phase);
@@ -30,12 +34,24 @@ class model_monitor_c extends uvm_monitor;
 		@ (posedge this.vif.i_RSTN);
 	endtask
 	task i_data;
-		while (this.vif.i_VALID == 0) @ (posedge this.vif.i_CLK);
+		if (cfg.is_handshake == 1) begin
+			while (!((this.vif.i_VALID == 1) && (this.vif.i_READY == 1)))
+				@ (posedge this.vif.i_CLK);
+		end else begin
+			while (this.vif.i_VALID == 0) 
+				@ (posedge this.vif.i_CLK);
+		end
 		items.DATA = this.vif.i_DATA;
 		@ (posedge this.vif.i_CLK);
 	endtask
 	task o_data;
-		while (this.vif.o_VALID == 0) @ (posedge this.vif.i_CLK);
+		if (cfg.is_handshake == 1) begin
+			while (!((this.vif.o_VALID == 1) && (this.vif.o_READY == 1)))
+				@ (posedge this.vif.i_CLK);
+		end else begin
+			while (this.vif.o_VALID == 0) 
+				@ (posedge this.vif.i_CLK);
+		end
 		items.DATA = this.vif.o_DATA;
 		@ (posedge this.vif.i_CLK);
 	endtask

@@ -3,6 +3,7 @@
 `include "params_def.svh"
 class model_agent_c extends uvm_agent;
 	virtual model_vif  vif;
+	model_config_c     cfg;
 	model_driver_c     drv;
 	model_seqr_c       seqr;
 	model_monitor_c    i_monitor;
@@ -29,10 +30,17 @@ class model_agent_c extends uvm_agent;
 		uvm_config_db#(model_seqr_c)::set(this, "","model_seqr",seqr);
 		if (!uvm_config_db#(virtual model_vif)::get(this,"","model_vif", vif))
 			`uvm_error("DEBUG", $psprintf("%s [%3d] VIRTUAL INTERFACE NOT FOUND", `__FILE__, `__LINE__))
+		if (!uvm_config_db#(model_config_c)::get(this,"","model_cfg", cfg))
+			`uvm_error("DEBUG", $psprintf("%s [%3d] MODEL CONFIG NOT FOUND", `__FILE__, `__LINE__))
+
 		uvm_config_db#(virtual model_vif)::set(this,"model_driver", "model_vif", vif);
 		uvm_config_db#(virtual model_vif)::set(this,"model_seqr", "model_vif", vif);
 		uvm_config_db#(virtual model_vif)::set(this,"model_i_monitor", "model_vif", vif);
 		uvm_config_db#(virtual model_vif)::set(this,"model_o_monitor", "model_vif", vif);
+
+		uvm_config_db#(model_config_c)::set(this,"model_driver", "model_cfg", cfg);
+		uvm_config_db#(model_config_c)::set(this,"model_i_monitor", "model_cfg", cfg);
+		uvm_config_db#(model_config_c)::set(this,"model_o_monitor", "model_cfg", cfg);
 
 	endfunction
 

@@ -6,8 +6,10 @@ import model_pkg::*;
 
 class test_c extends uvm_test;
 
-	model_agent_c model_agent;
-	model_vseq_c vseq;
+	model_agent_c    agent;
+	model_vseq_c     vseq;
+
+	model_config_c   cfg;
 
 	virtual model_vif vif;
 
@@ -21,9 +23,21 @@ class test_c extends uvm_test;
 		super.build_phase(phase);
 		if (!uvm_config_db#(virtual model_vif)::get(this, "", "model_vif", vif))
 			`uvm_error("DEBUG", $psprintf("%s [%3d] VIRTUAL INTERFACE NOT FOUND", `__FILE__, `__LINE__))
-		model_agent = model_agent_c::type_id::create("model_agent", this);
+		agent = model_agent_c::type_id::create("model_agent", this);
+		vseq  = model_vseq_c::type_id::create("model_vseq", this);
+		cfg   = model_config_c::type_id::create("model_cfg");
+		///////////////////////////////////////////////////////////////////////
+		// CONFIGURE HANDSHAKE MODEL
+		// cfg.is_handshake = 0        ---> no handshake model (only valid)
+		// cfg.is_handshake = 1        --->    handshake model (valid, ready)
+		///////////////////////////////////////////////////////////////////////
+		cfg.is_handshake = 1;
+		///////////////////////////////////////////////////////////////////////
+		///////////////////////////////////////////////////////////////////////
+		///////////////////////////////////////////////////////////////////////
+
 		uvm_config_db#(virtual model_vif)::set(this, "model_agent", "model_vif", vif);
-		vseq = model_vseq_c::type_id::create("model_vseq", this);
+		uvm_config_db#(model_config_c)::set(this, "model_agent", "model_cfg", cfg);
 	endfunction
 
 	virtual function void connect_phase(uvm_phase phase);
@@ -38,7 +52,7 @@ class test_c extends uvm_test;
 	task run_phase(uvm_phase phase);
 		phase.raise_objection(this, "START TEST");
 		$display("==================================================================");
-		$display("==              SIMULATION START!!");
+		$display("==    MODEL     SIMULATION START!!");
 		$display("==================================================================");
 		vseq.start(null);
 		phase.drop_objection(this, "");
