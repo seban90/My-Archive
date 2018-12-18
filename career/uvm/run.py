@@ -162,6 +162,7 @@ def make_makefile(ip_name, path):
 	contents += "else\n"
 	contents += "\topt_dump = -input ncsim_fsdb.tcl\n"
 	contents += "endif\n"
+	contents += "endif\n"
 	contents += "export IP_DIR\n\n\n"
 	contents += "all:\n"
 	contents += "\t@echo \"=========================================================\"\n"
