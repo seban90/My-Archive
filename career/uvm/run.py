@@ -55,12 +55,13 @@ def packaging(ip_name, path):
 	contents += "// monitor.sv\n"
 	contents += "// scoreboard.sv\n"
 	contents += "// agent.sv\n\n"
+	contents += "`timescale 1ns/1ps\n"
 	contents += "package %s_pkg;\n"% ip_name
 	contents += "\timport uvm_pkg::*;\n"
-	contents += "\t`timescale 1ns/1ps\n"
 	contents += "\t`include \"uvm_macros.svh\"\n"
 	contents += "\t`include \"%s_params_def.svh\"\n" % ip_name
 	contents += "\t`include \"%s_params_undef.svh\"\n" % ip_name
+	contents += "\t`include \"%s_config.sv\"\n" % ip_name
 	contents += "\t`include \"%s_sequence.sv\"\n" % ip_name
 	contents += "\t`include \"%s_sequencer.sv\"\n" % ip_name
 	contents += "\t`include \"%s_driver.sv\"\n" % ip_name
@@ -76,10 +77,20 @@ def make_dut(ip_name, output_dir):
 	f = io.open("%s/%s" %(rtl_path, "dut_wrapper.sv"), mode="wt", encoding="utf-8")
 	contents = ""
 	contents += "import %s_pkg::*;\n" % ip_name
-	contents += "module %s_wrapper # (parameter BITWIDTH=8) (\n" % ip_name
+	contents += "module %s_wrapper # (parameter BITWIDTH=`BITWIDTH) (\n" % ip_name
 	contents += "\t%s_vif vif\n" % ip_name
 	contents += ");\n"
 	contents += "\t%s #(BITWIDTH) dut (\n" % ip_name
+	contents += "\t\t .i_CLK   (vif.i_CLK  )\n"
+	contents += "\t\t,.i_nRST  (vif.i_nRST )\n"
+	contents += "\t\t,.i_DATA  (vif.i_DATA )\n"
+	contents += "\t\t,.i_VALID (vif.i_VALID)\n"
+	contents += "\t\t//remove '//' if module is based on a handshake\n"
+	contents += "\t\t//,.i_READY (vif.i_READY)\n"
+	contents += "\t\t,.o_DATA  (vif.o_DATA )\n"
+	contents += "\t\t,.o_VALID (vif.o_VALID)\n"
+	contents += "\t\t//remove '//' if module is based on a handshake\n"
+	contents += "\t\t//,.o_READY (vif.o_READY)\n"
 	contents += "\t);\n"
 	contents += "endmodule\n"
 	f.write(unicode(contents))
@@ -91,8 +102,10 @@ def make_dut(ip_name, output_dir):
 	contents += "\t,input                 i_nRST\n"
 	contents += "\t,input  [BITWIDTH-1:0] i_DATA\n"
 	contents += "\t,input                 i_VALID\n"
+	contents += "\t//,output                i_READY\n"
 	contents += "\t,output [BITWIDTH-1:0] o_DATA\n"
 	contents += "\t,output                o_VALID\n"
+	contents += "\t//,input                 o_READY\n"
 	contents += ");\n"
 	contents += "endmodule\n"
 	f.write(unicode(contents))
@@ -152,6 +165,7 @@ def make_makefile(ip_name, path):
 	contents += "\t@if [ ! -e ./outputs ]; then \\\n\t\tmkdir outputs; \\\n"
 	contents += "\tfi\n"
 	contents += "\tmake cc\n"
+	contents += "\tmake sim_env\n"
 	contents += "ifeq (${dump}, 0)\n"
 	contents += "\tcd outputs; time irun -access +rwc -sv -uvm -timescale 1ns/1ps -f ${IP_DIR}/sim/vcode.f -sv_lib ${IP_DIR}/outputs/sv_lib.so\n"
 	contents += "else\n"
@@ -166,6 +180,16 @@ def make_makefile(ip_name, path):
 	contents += "\tcd ${IP_DIR}/sim/c_model; time gcc -shared -o sv_lib.so %s_c_func.c -fPIC\n" % (ip_name)
 	contents += "\tcp ${IP_DIR}/sim/c_model/sv_lib.so ${IP_DIR}/outputs\n"
 	contents += "\n\n\n"
+	contents += "sim_env:\n"
+	contents += "\t@echo \"call fsdbDumpfile test.fsdb\" > outputs/ncsim_fsdb.tcl\n"
+	contents += "\t@echo \"call fsdbDumpvars 0 t\"  >> outputs/ncsim_fsdb.tcl\n"
+	contents += "\t@echo \"call fsdbDumpvars 0 t.dut\" >> outputs/ncsim_fsdb.tcl\n"
+	contents += "\t@echo \"run\" >> outputs/ncsim_fsdb.tcl\n"
+	contents += "\t@echo \"database -open waves -shm\" > outputs/ncsim_shm.tcl\n"
+	contents += "\t@echo \"probe -create t -depth 5\"  >> outputs/ncsim_shm.tcl\n"
+	contents += "\t@echo \"probe -show\" >> outputs/ncsim_shm.tcl\n"
+	contents += "\t@echo \"run\" >> outputs/ncsim_shm.tcl\n"
+
 	contents += "clean:\n"
 	contents += "\trm -rf outputs\n"
 	f.write(unicode(contents))
