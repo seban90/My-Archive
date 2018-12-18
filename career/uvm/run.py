@@ -193,7 +193,7 @@ def make_makefile(ip_name, path):
 	contents += "\t@echo \"run\" >> outputs/ncsim_shm.tcl\n"
 	contents += ".PHONY: verdi\n"
 	contents += "verdi:\n"
-	contents += "cd outputs; verdi -f ${IP_DIR}/sim/vcode.f test.fsdb &\n"
+	contents += "\tcd outputs; verdi -f ${IP_DIR}/sim/vcode.f test.fsdb &\n"
 
 	contents += "clean:\n"
 	contents += "\trm -rf outputs\n"
