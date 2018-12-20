@@ -5,11 +5,11 @@ interface model_vif (
 	 input bit i_CLK
 	,input bit i_RSTN
 );
-	logic [`BITWIDTH-1:0] i_DATA;
+%(i_intf_num)s
 	logic                 i_VALID;
 	logic                 i_READY;
 
-	logic [`BITWIDTH-1:0] o_DATA;
+%(o_intf_num)s
 	logic                 o_VALID;
 	logic                 o_READY;
 endinterface: model_vif

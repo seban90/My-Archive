@@ -4,7 +4,8 @@
 class model_seq_item_c extends uvm_sequence_item;
 
 	rand bit                 TYPE;
-	rand bit [`BITWIDTH-1:0] DATA;
+%(seq_in_data_num)s
+%(seq_out_data_num)s
 
 	constraint value_type {TYPE inside {0,1};}
 

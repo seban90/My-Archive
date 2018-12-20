@@ -19,9 +19,9 @@ class model_monitor_c extends uvm_monitor;
 	virtual function void build_phase(uvm_phase phase);
 		super.build_phase(phase);
 		if (!uvm_config_db#(virtual model_vif)::get(this,"","model_vif", vif))
-			`uvm_error("DEBUG", $psprintf("%s [%3d] VIRTUAL INTERFACE NOT FOUND", `__FILE__, `__LINE__))
+			`uvm_error("DEBUG", $psprintf("VIRTUAL INTERFACE NOT FOUND"))
 		if (!uvm_config_db#(model_config_c)::get(this,"","model_cfg", cfg))
-			`uvm_error("DEBUG", $psprintf("%s [%3d] MODEL CONFIG NOT FOUND", `__FILE__, `__LINE__))
+			`uvm_error("DEBUG", $psprintf("MODEL CONFIG NOT FOUND"))
 
 	endfunction
 	virtual function void connect_phase(uvm_phase phase);
@@ -39,7 +39,7 @@ class model_monitor_c extends uvm_monitor;
 			while (this.vif.i_VALID == 0) 
 				@ (posedge this.vif.i_CLK);
 		end
-		items.DATA = this.vif.i_DATA;
+%(seq_in_data_num)s
 		@ (posedge this.vif.i_CLK);
 	endtask
 	task o_data;
@@ -50,7 +50,7 @@ class model_monitor_c extends uvm_monitor;
 			while (this.vif.o_VALID == 0) 
 				@ (posedge this.vif.i_CLK);
 		end
-		items.DATA = this.vif.o_DATA;
+%(seq_out_data_num)s
 		@ (posedge this.vif.i_CLK);
 	endtask
 

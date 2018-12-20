@@ -1,52 +1,250 @@
 #!/bin/python
+
 import os
 import sys
 import io
 import re
 
-def setup_matching(ip_name, file_name, path, output_dir=None):
-	template_path = path+'/'+'template'
-	output_filename = ip_name +'_'+ file_name 
-	template_file = template_path + '/'+file_name
-	output_verilog_dir = output_dir+'/sim/uvm_model'
-	output_c_dir = output_dir+'/sim/c_model'
+######################################################################################
+######################################################################################
+input_num = 4
+output_num = 1
+######################################################################################
+######################################################################################
+######################################################################################
 
-	patt = re.compile(r'[\w_]+\.[sv]+')
-	matched = patt.match(file_name)
+def setup_uvm_package (ip_name, file_name, base_dir, output_dir):
+	if file_name == "makefile":
+		return
+	p = re.compile(r'\.[\w_]+\.[scv]+')
+	matched = p.match(file_name)
+	if matched:
+		print file_name
+		return 
+
+	template_path   = base_dir + '/template'
+	template_file   = template_path + ('/%s' % file_name)
+	output_filename = ip_name +'_'+file_name
+	output_sv_dir   = output_dir + '/uvm_model'
+	output_vector_dir   = output_dir + '/vectors/test'
+	output_tb_dir   = output_dir + '/tb'
+	output_vip_dir  = output_dir + '/uvm_model/vip'
+	output_c_dir    = output_dir + '/cmodels'
+	output_rtl_dir    = output_dir + '/rtl'
+
+	params = {}
 
 	if file_name == "test_bench":
 		return
-
 	f = io.open(template_file, mode="rt", encoding="utf-8")
-	s = str(f.read())
-	contents = re.sub(r'MODEL',ip_name.upper(), s)
-	contents = re.sub(r'params',ip_name+'_params', contents)
-	contents = re.sub(r'model',ip_name, contents)
+
+	template_contents = str(f.read())
 	f.close()
 
-	if file_name == "top.sv" or file_name == "vseq.sv" :
-		output_verilog_dir = output_dir+'/sim'
+	uvm_contents = re.sub(r'MODEL', ip_name.upper(), template_contents)
+	uvm_contents = re.sub(r'params', ip_name+'_params', uvm_contents)
+	uvm_contents = re.sub(r'model', ip_name, uvm_contents)
+	######################################################################################
+	if file_name == "c_func.c":
+		c_func_params = []
+		for i in range(input_num):
+			if i == 0:
+				contents = ' USER_TYPE  i_data_%d\n' % i
+			else:
+				contents = '\t,USER_TYPE  i_data_%d\n' % i
+			c_func_params.append(contents)
+		for i in range(output_num):
+			contents = '\t,USER_TYPE* o_data_%d\n' % i
+			c_func_params.append(contents)
+		params["c_func_parameters"] = ''.join(c_func_params)
+		uvm_contents = uvm_contents % params
+
+	elif file_name == "vif.sv":
+		i_intf_params = []
+		o_intf_params = []
+		for i in range(input_num):
+			contents = '\tlogic [`BITWIDTH-1:0] i_DATA_%d;\n' % i
+			i_intf_params.append(contents)
+		for i in range(output_num):
+			contents = '\tlogic [`BITWIDTH-1:0] o_DATA_%d;\n' % i
+			o_intf_params.append(contents)
+
+		params["i_intf_num"] = ''.join(i_intf_params)
+		params["o_intf_num"] = ''.join(o_intf_params)
+		uvm_contents = uvm_contents % params
+
+	elif file_name == "model_wrapper.sv":
+		i_intf_params = []
+		o_intf_params = []
+		for i in range(input_num):
+			contents = '\t\t,.i_DATA_%d       (vif.i_DATA_%d)\n' % (i,i)
+			i_intf_params.append(contents)
+		for i in range(output_num):
+			contents = '\t\t,.o_DATA_%d       (vif.o_DATA_%d)\n' % (i,i)
+			o_intf_params.append(contents)
+
+		params["i_intf_num"] = ''.join(i_intf_params)
+		params["o_intf_num"] = ''.join(o_intf_params)
+		uvm_contents = uvm_contents % params
+
+	elif file_name == "model.v":
+		i_intf_params = []
+		o_intf_params = []
+		for i in range(input_num):
+			contents = '\t,input  [BITWIDTH-1:0] i_DATA_%d\n' % (i)
+			i_intf_params.append(contents)
+		for i in range(output_num):
+			contents = '\t,output [BITWIDTH-1:0] o_DATA_%d\n' % (i)
+			o_intf_params.append(contents)
+		params["i_intf_num"] = ''.join(i_intf_params)
+		params["o_intf_num"] = ''.join(o_intf_params)
+		uvm_contents = uvm_contents % params
+
+	elif file_name == "sequence.sv":
+		seq_in_data_params = []
+		seq_out_data_params = []
+		for i in range(input_num):
+			contents = '\trand bit [`BITWIDTH-1:0] DATA_%d;\n' %i
+			seq_in_data_params.append(contents)
+		for i in range(output_num):
+			contents = '\trand bit [`BITWIDTH-1:0] DATA_OUT_%d;\n' %i
+			seq_out_data_params.append(contents)
+
+		params["seq_in_data_num"] = ''.join(seq_in_data_params)
+		params["seq_out_data_num"] = ''.join(seq_out_data_params)
+		uvm_contents = uvm_contents % params
+	elif file_name == "driver.sv":
+		seq_in_data_params = []
+		seq_in_data_reset_params = []
+		seq_out_data_params = []
+		for i in range(input_num):
+			contents = '\t\tthis.vif.i_DATA_%d = 0;\n' % i
+			seq_in_data_reset_params.append(contents)
+		for i in range(input_num):
+			contents = '\t\tthis.vif.i_DATA_%d = seq.DATA_%d;\n' %(i, i)
+			seq_in_data_params.append(contents)
+		for i in range(output_num):
+			contents = '\t\tseq.DATA_%d = this.vif.o_DATA_%d;\n' %(i, i)
+			seq_out_data_params.append(contents)
+
+		params["seq_in_data_num"] = ''.join(seq_in_data_params)
+		params["seq_in_data_reset"] = ''.join(seq_in_data_reset_params)
+		params["seq_out_data_num"] = ''.join(seq_out_data_params)
+		uvm_contents = uvm_contents % params
+	elif file_name == "monitor.sv":
+		seq_in_data_params = []
+		seq_out_data_params = []
+		for i in range(input_num):
+			contents = '\t\titems.DATA_%d = this.vif.i_DATA_%d;\n' %(i, i)
+			seq_in_data_params.append(contents)
+		for i in range(output_num):
+			contents = '\t\titems.DATA_OUT_%d = this.vif.o_DATA_%d;\n' %(i, i)
+			seq_out_data_params.append(contents)
+
+		params["seq_in_data_num"] = ''.join(seq_in_data_params)
+		params["seq_out_data_num"] = ''.join(seq_out_data_params)
+		uvm_contents = uvm_contents % params
+	elif file_name == "scoreboard.sv":
+		c_func_input_params        = []
+		c_func_output_params       = []
+		compare_decl_input_params  = []
+		compare_decl_output_params = []
+		compare_decl_golden_params = []
+		compare_deriv_input_params  = []
+		compare_deriv_output_params = []
+		compare_c_input_params     = []
+		compare_c_output_params    = []
+
+		compare_dashboard_params   = []
+
+		for i in range(input_num):
+			contents = 'input  `C_DATATYPE i_data_%d\n\t' % i
+			c_func_input_params.append(contents)
+		for i in range(output_num):
+			contents = ',output `C_DATATYPE o_data_%d\n\t' % i
+			c_func_output_params.append(contents)
+		for i in range(input_num):
+			contents = '\t\t`C_DATATYPE i_data_%d;' % i
+			compare_decl_input_params.append(contents)
+		for i in range(output_num):
+			contents = '\t\t`C_DATATYPE o_data_%d;' % i
+			compare_decl_output_params.append(contents)
+		for i in range(output_num):
+			contents = '\t\t`C_DATATYPE g_data_%d;' % i
+			compare_decl_golden_params.append(contents)
+
+		for i in range(input_num):
+			contents = '\t\ti_data_%d = i_data_seq.DATA_%d;' % (i, i)
+			compare_deriv_input_params.append(contents)
+		for i in range(output_num):
+			contents = '\t\to_data_%d = o_data_seq.DATA_OUT_%d;' % (i, i)
+			compare_deriv_output_params.append(contents)
+
+		for i in range(input_num):
+			if i is not (input_num-1):
+				contents = 'i_data_%d' % i
+			else:
+				contents = 'i_data_%d\t\t\t' % i
+			compare_c_input_params.append(contents)
+		for i in range(output_num):
+			if i is not (output_num-1):
+				contents = ',g_data_%d' % i
+			else:
+				contents = ',g_data_%d\t\t\t' % i
+			compare_c_output_params.append(contents)
+		for i in range(output_num):
+			contents  = "\t\tif (g_data_%d != o_data_%d) begin \n" % (i,i)
+			contents += "\t\t\tuvm_report_info(\"DEBUG\", \
+$psprintf(\"%s [%3d] PORT %d OUTPUT DATA %x GOLDEN DATA %x\" \
+, `__FILE__, `__LINE__, "
+			contents += "o_data_%d, g_data_%d));\n" % (i,i)
+			contents += "\t\t\tuvm_report_info(\"*E\", $psprintf(\"%s [%3d] TEST_FAILED\",`__FILE__, `__LINE__));\n"
+			contents += "\t\tend\n"
+			compare_dashboard_params.append(contents)
+
+		params["c_func_input_num"]     = ','.join(c_func_input_params)
+		params["c_func_output_num"]    = ''.join(c_func_output_params)
+		params["compare_decl_input"]   = '\n'.join(compare_decl_input_params)
+		params["compare_decl_output"]  = '\n'.join(compare_decl_output_params)
+		params["compare_decl_golden"]  = '\n'.join(compare_decl_golden_params)
+		params["compare_deriv_input"]  = '\n'.join(compare_deriv_input_params)
+		params["compare_deriv_output"] = '\n'.join(compare_deriv_output_params)
+		params["compare_c_input_num"]  = ','.join(compare_c_input_params)
+		params["compare_c_output_num"] = ''.join(compare_c_output_params)
+		params["compare_dashboard"]    = ''.join(compare_dashboard_params)
+		uvm_contents = uvm_contents % params
+
+	######################################################################################
+	if file_name == "top.sv":
+		write_dir = output_sv_dir
+	elif file_name == "vseq.sv":
+		write_dir = output_vector_dir
 	elif file_name == "pkg.vinc":
 		output_filename = file_name
-		output_verilog_dir = output_dir+'/sim/'+'test_bench'
-
+		write_dir = output_tb_dir
 	elif file_name == "tb_top.sv":
 		output_filename = file_name
-
-	if matched:
-		f = io.open("%s/%s"%(output_verilog_dir,output_filename), mode="wt", encoding="utf-8")
-		f.write(unicode(contents))
-		f.close()
+		write_dir = output_tb_dir
+	elif file_name == "model.v":
+		output_filename = "%s.v" % ip_name
+		write_dir = output_rtl_dir
+	elif file_name == "model_wrapper.sv":
+		output_filename = "%s_wrapper.sv" % ip_name
+		write_dir = output_rtl_dir
+	elif file_name == "c_func.c":
+		write_dir = output_c_dir
 	else:
-		f = io.open("%s/%s"%(output_c_dir,output_filename), mode="wt", encoding="utf-8")
-		f.write(unicode(contents))
-		f.close()
+		write_dir = output_vip_dir
 
+	f = io.open("%s/%s"%(write_dir, output_filename), mode="wt", encoding="utf-8")
+	f.write(unicode(uvm_contents))
+	f.close()
+		
 	return
 
-def packaging(ip_name, path):
-	uvm_path = path + '/sim/uvm_model'
-	f = io.open("%s/%s"%(uvm_path, "%s_pkg.sv"%ip_name), mode="wt", encoding="utf=8")
+def setup_uvm_pkg (ip_name, output_dir):
+	output_vip_dir  = output_dir + '/uvm_model/vip'
+	f = io.open("%s/%s"%(output_vip_dir, "%s_pkg.sv"%ip_name), mode="wt", encoding="utf-8")
 	contents  = ""
 	contents += "// Please rearrange like this\n"
 	contents += "// sequence.sv\n"
@@ -68,154 +266,71 @@ def packaging(ip_name, path):
 	contents += "\t`include \"%s_monitor.sv\"\n" % ip_name
 	contents += "\t`include \"%s_scoreboard.sv\"\n" % ip_name
 	contents += "\t`include \"%s_agent.sv\"\n" % ip_name
+	contents += "\t`include \"%s_env.sv\"\n" % ip_name
 	contents += "endpackage: %s_pkg\n" % ip_name
 	f.write(unicode(contents))
 	f.close()
 
-def make_dut(ip_name, output_dir):
-	rtl_path = output_dir + '/rtl'
-	f = io.open("%s/%s" %(rtl_path, "dut_wrapper.sv"), mode="wt", encoding="utf-8")
-	contents = ""
-	contents += "import %s_pkg::*;\n" % ip_name
-	contents += "`include \"%s_params_def.svh\"\n" % ip_name
-	contents += "module %s_wrapper # (parameter BITWIDTH=`BITWIDTH) (\n" % ip_name
-	contents += "\t%s_vif vif\n" % ip_name
-	contents += ");\n"
-	contents += "\t%s #(BITWIDTH) dut (\n" % ip_name
-	contents += "\t\t .i_CLK   (vif.i_CLK  )\n"
-	contents += "\t\t,.i_nRST  (vif.i_RSTN )\n"
-	contents += "\t\t,.i_DATA  (vif.i_DATA )\n"
-	contents += "\t\t,.i_VALID (vif.i_VALID)\n"
-	contents += "\t\t//remove '//' if module is based on a handshake\n"
-	contents += "\t\t//,.i_READY (vif.i_READY)\n"
-	contents += "\t\t,.o_DATA  (vif.o_DATA )\n"
-	contents += "\t\t,.o_VALID (vif.o_VALID)\n"
-	contents += "\t\t//remove '//' if module is based on a handshake\n"
-	contents += "\t\t//,.o_READY (vif.o_READY)\n"
-	contents += "\t);\n"
-	contents += "`include \"%s_params_undef.svh\"\n" % ip_name
-	contents += "endmodule\n"
-	f.write(unicode(contents))
-	f.close()
-	f = io.open("%s/%s" %(rtl_path, "dut.v"), mode="wt", encoding="utf-8")
-	contents = ""
-	contents += "module %s # (parameter BITWIDTH=8) (\n" % ip_name
-	contents += "\t input                 i_CLK\n"
-	contents += "\t,input                 i_nRST\n"
-	contents += "\t,input  [BITWIDTH-1:0] i_DATA\n"
-	contents += "\t,input                 i_VALID\n"
-	contents += "\t//,output                i_READY\n"
-	contents += "\t,output [BITWIDTH-1:0] o_DATA\n"
-	contents += "\t,output                o_VALID\n"
-	contents += "\t//,input                 o_READY\n"
-	contents += ");\n"
-	contents += "endmodule\n"
-	f.write(unicode(contents))
-	f.close()
 
+def setup_vcode (ip_name, output_dir):
+	#pass
+	p = re.compile(r'[\w_]+pkg\.[sv]+')
+	for root, dirs, files in os.walk(output_dir):
+		if root == ("%s/rtl" % output_dir):
+			f = io.open("%s/%s" % (root, "vcode.f"), mode="wt", encoding="utf-8")
+			contents = "-INCDIR ${ip_path}/rtl\n\n"
+			files.sort()
+			for g in files:
+				contents += "${ip_path}/rtl/%s\n" % g
+			f.write(unicode(contents))
+			f.close()
+		elif root == ("%s/tb" % output_dir):
+			f = io.open("%s/%s" % (root, "vcode.f"), mode="wt", encoding="utf-8")
+			contents = "-INCDIR ${ip_path}/tb\n\n"
+			contents += "${ip_path}/tb/tb_top.sv\n"
+			f.write(unicode(contents))
+			f.close()
+		elif root == ("%s/uvm_model" % output_dir):
+			f = io.open("%s/%s" % (root, "vcode.f"), mode="wt", encoding="utf-8")
+			contents = "-INCDIR ${ip_path}/uvm_model\n\n"
+			#contents += "-f ${ip_path}/uvm_model/vip/vcode.f\n\n"
+			for g in files:
+				contents += "${ip_path}/uvm_model/%s\n" % g
+			f.write(unicode(contents))
+			f.close()
+		elif root == ("%s/uvm_model/vip" % output_dir):
+			f = io.open("%s/%s" % (root, "vcode.f"), mode="wt", encoding="utf-8")
+			contents = "-INCDIR ${ip_path}/uvm_model/vip\n\n"
+			contents += "${ip_path}/uvm_model/vip/%s_vif.sv\n" % ip_name
+			contents += "${ip_path}/uvm_model/vip/%s_pkg.sv\n" % ip_name
+			f.write(unicode(contents))
+			f.close()
+		elif root == ("%s/vectors/test" % output_dir):
+			f = io.open("%s/%s" % (root, "vcode.f"), mode="wt", encoding="utf-8")
+			contents  = "-f ${ip_path}/uvm_model/vip/vcode.f\n"
+			contents += "${ip_path}/vectors/test/%s_vseq.sv\n" % (ip_name)
+			contents += "-f ${ip_path}/uvm_model/vcode.f\n\n"
+			contents += "-f ${ip_path}/rtl/vcode.f\n"
+			contents += "-f ${ip_path}/tb/vcode.f\n"
+			f.write(unicode(contents))
+			f.close()
 
-def make_vcode (ip_name, path):
-	rtl_path = path + '/rtl'
-	sim_path = path + '/sim'
-	tb_path = sim_path + '/test_bench'
-	uvm_path = sim_path + '/uvm_model'
-	f = io.open("%s/%s"%(rtl_path, "vcode.f"), mode="wt", encoding="utf-8")
-	contents = ""
-	contents += "-INCDIR ${IP_DIR}/rtl\n\n"
-	contents += "${IP_DIR}/rtl/dut_wrapper.sv\n"
-	contents += "${IP_DIR}/rtl/dut.v"
-	f.write(unicode(contents))
-	f.close()
-	f = io.open("%s/%s"%(sim_path, "vcode.f"), mode="wt", encoding="utf-8")
-	contents = "-INCDIR ${IP_DIR}/sim\n\n"
-	contents += "-f ${IP_DIR}/sim/uvm_model/vcode.f\n\n"
-	contents += "${IP_DIR}/sim/%s_vseq.sv\n" %(ip_name)
-	contents += "${IP_DIR}/sim/%s_top.sv\n" %(ip_name)
-	contents += "-f ${IP_DIR}/sim/test_bench/vcode.f\n\n"
-	contents += "-f ${IP_DIR}/rtl/vcode.f\n\n"
-	f.write(unicode(contents))
-	f.close()
-	f = io.open("%s/%s"%(tb_path, "vcode.f"), mode="wt", encoding="utf-8")
-	contents = "-INCDIR ${IP_DIR}/sim/test_bench\n\n"
-	contents += "${IP_DIR}/sim/test_bench/tb_top.sv\n\n"
-	f.write(unicode(contents))
-	f.close()
-	f = io.open("%s/%s"%(uvm_path, "vcode.f"), mode="wt", encoding="utf-8")
-	contents = "-INCDIR ${IP_DIR}/sim/uvm_model\n\n"
-	contents += "${IP_DIR}/sim/uvm_model/%s_pkg.sv\n" % ip_name
-	contents += "${IP_DIR}/sim/uvm_model/%s_vif.sv\n" % ip_name
-	f.write(unicode(contents))
-	f.close()
+		else:
+			continue
 
-def make_makefile(ip_name, path):
-	f = io.open("%s/%s"%(path, "makefile"), mode="wt", encoding="utf-8")
-	contents = ""
-	contents += "IP_DIR:= $(CURDIR)\n"
-	contents += "fsdb:= 1\n"
-	contents += "dump:= 1\n"
-	contents += "\n\n\n"
-	contents += "ifeq (${dump}, 0)\n"
-	contents += "\topt_dump =\n"
-	contents += "else\n"
-	contents += "ifeq (${fsdb}, 0)\n"
-	contents += "\topt_dump = -input ncsim_shm.tcl\n"
-	contents += "else\n"
-	contents += "\topt_dump = -input ncsim_fsdb.tcl\n"
-	contents += "endif\n"
-	contents += "endif\n"
-	contents += "export IP_DIR\n\n\n"
-	contents += "all:\n"
-	contents += "\t@echo \"=========================================================\"\n"
-	contents += "\t@echo \"make sim        ---> sim with fsdb dump files\"\n"
-	contents += "\t@echo \"make sim fsdb=0 ---> sim with  shm dump files\"\n"
-	contents += "\t@echo \"make sim dump=0 ---> sim without   dump files\"\n"
-	contents += "\t@echo \"=========================================================\"\n"
-	contents += "\n\n\n"
-	contents += ".PHONY: sim\n"
-	contents += "sim:\n"
-	contents += "\t@if [ ! -e ./outputs ]; then \\\n\t\tmkdir outputs; \\\n"
-	contents += "\tfi\n"
-	contents += "\tmake cc\n"
-	contents += "\tmake sim_env\n"
-	contents += "\tcd outputs; time irun -access +rwc -sv -uvm -timescale 1ns/1ps -f ${IP_DIR}/sim/vcode.f -sv_lib ${IP_DIR}/outputs/sv_lib.so ${opt_dump}\n"
-	contents += "\n\n\n"
-	contents += "cc:\n"
-	contents += "\tcd ${IP_DIR}/sim/c_model; time gcc -shared -o sv_lib.so %s_c_func.c -fPIC\n" % (ip_name)
-	contents += "\tcp ${IP_DIR}/sim/c_model/sv_lib.so ${IP_DIR}/outputs\n"
-	contents += "\n\n\n"
-	contents += "sim_env:\n"
-	contents += "\t@echo \"call fsdbDumpfile test.fsdb\" > outputs/ncsim_fsdb.tcl\n"
-	contents += "\t@echo \"call fsdbDumpvars 0 t\"  >> outputs/ncsim_fsdb.tcl\n"
-	contents += "\t@echo \"call fsdbDumpvars 0 t.dut\" >> outputs/ncsim_fsdb.tcl\n"
-	contents += "\t@echo \"run\" >> outputs/ncsim_fsdb.tcl\n"
-	contents += "\t@echo \"database -open waves -shm\" > outputs/ncsim_shm.tcl\n"
-	contents += "\t@echo \"probe -create t -depth 5\"  >> outputs/ncsim_shm.tcl\n"
-	contents += "\t@echo \"probe -show\" >> outputs/ncsim_shm.tcl\n"
-	contents += "\t@echo \"run\" >> outputs/ncsim_shm.tcl\n"
-	contents += ".PHONY: verdi\n"
-	contents += "verdi:\n"
-	contents += "\tcd outputs; verdi -f ${IP_DIR}/sim/vcode.f test.fsdb &\n"
-
-	contents += "clean:\n"
-	contents += "\trm -rf outputs\n"
-	f.write(unicode(contents))
-	f.close()
-
-
-def run(path=None, ip_name=None):
+def run(path, ip_name):
 	template_path = '%s/template' % path
-	output_dir = path+'/'+ip_name
+	output_dir = cur_path + '/%s' % ip_name
 	files = os.listdir(template_path)
 	for i in range(len(files)):
-		#setup_matching(ip_name, files[i], template_path, output_dir)
-		setup_matching(ip_name, files[i], path, output_dir)
-	
-	packaging(ip_name, output_dir)
-	make_dut(ip_name, output_dir)
-	make_makefile(ip_name, output_dir)
-	make_vcode(ip_name, output_dir)
-		
+		setup_uvm_package(ip_name, files[i], path, output_dir)
+
+	setup_uvm_pkg(ip_name, output_dir)
+	setup_vcode(ip_name, output_dir)
+
 
 if __name__ == "__main__":
-	run(os.environ['PWD'], ip_name=sys.argv[1])
+	cur_path = os.environ['PWD']
+	ip_name = sys.argv[1]
 
+	run(cur_path, ip_name)

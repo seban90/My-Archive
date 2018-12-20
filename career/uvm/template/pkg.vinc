@@ -3,6 +3,9 @@ import model_pkg::*;
 
 model_vif vif(g_clock, g_resetn);
 
+reg error;
+initial error = 0;
+
 model_wrapper dut (
 	.vif(vif)
 );

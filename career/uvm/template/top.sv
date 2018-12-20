@@ -6,7 +6,7 @@ import model_pkg::*;
 
 class test_c extends uvm_test;
 
-	model_agent_c    agent;
+	model_env_c      env;
 	model_vseq_c     vseq;
 
 	model_config_c   cfg;
@@ -23,7 +23,7 @@ class test_c extends uvm_test;
 		super.build_phase(phase);
 		if (!uvm_config_db#(virtual model_vif)::get(this, "", "model_vif", vif))
 			`uvm_error("DEBUG", $psprintf("%s [%3d] VIRTUAL INTERFACE NOT FOUND", `__FILE__, `__LINE__))
-		agent = model_agent_c::type_id::create("model_agent", this);
+		env   = model_env_c::type_id::create("model_env", this);
 		vseq  = model_vseq_c::type_id::create("model_vseq", this);
 		cfg   = model_config_c::type_id::create("model_cfg");
 		///////////////////////////////////////////////////////////////////////
@@ -36,8 +36,8 @@ class test_c extends uvm_test;
 		///////////////////////////////////////////////////////////////////////
 		///////////////////////////////////////////////////////////////////////
 
-		uvm_config_db#(virtual model_vif)::set(this, "model_agent", "model_vif", vif);
-		uvm_config_db#(model_config_c)::set(this, "model_agent", "model_cfg", cfg);
+		uvm_config_db#(virtual model_vif)::set(this, "model_env", "model_vif", vif);
+		uvm_config_db#(model_config_c)::set(this, "model_env", "model_cfg", cfg);
 	endfunction
 
 	virtual function void connect_phase(uvm_phase phase);

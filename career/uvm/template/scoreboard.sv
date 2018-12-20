@@ -1,8 +1,13 @@
 `ifndef MODEL_SCOREBOARD_DEF
 `define MODEL_SCOREBOARD_DEF
+`define C_DATATYPE            longint unsigned
+
 `include "params_def.svh"
 
-import "DPI-C" context function int unsigned c_model_func(input int unsigned i_data);
+import "DPI-C" context function c_model_func(
+	 %(c_func_input_num)s
+	%(c_func_output_num)s
+);
 
 class model_scoreboard_c extends uvm_scoreboard;
 	uvm_analysis_export   # (model_seq_item_c) i_data_sb_port;
@@ -56,17 +61,20 @@ class model_scoreboard_c extends uvm_scoreboard;
 		 input model_seq_item_c i_data_seq
 		,input model_seq_item_c o_data_seq
 	);
-		int unsigned i_data, o_data, g_data;
-		i_data = i_data_seq.DATA;
-		o_data = o_data_seq.DATA;
-		g_data = c_model_func(i_data);
-		if (g_data != o_data) begin
-			uvm_report_info("DEBUG", $psprintf("%s [%d] OUTPUT DATA %x\n GOLDEN_DATA %x",`__FILE__, `__LINE__,o_data, g_data));
-			uvm_report_info("ERROR", $psprintf("%s [%d] TEST FAILD",`__FILE__, `__LINE__));
-		end
-		uvm_report_info("DEBUG", $psprintf("%s [%d] Compare DATA Completed",`__FILE__, `__LINE__));
+%(compare_decl_input)s
+%(compare_decl_output)s
+%(compare_decl_golden)s
+%(compare_deriv_input)s
+%(compare_deriv_output)s
+		c_model_func(
+			 %(compare_c_input_num)s
+			%(compare_c_output_num)s
+		);
+%(compare_dashboard)s
+		uvm_report_info("DEBUG", "DATA MATCHED");
 	endfunction
 
 endclass: model_scoreboard_c
+`undef USER_TYPE
 `include "params_undef.svh"
 `endif
