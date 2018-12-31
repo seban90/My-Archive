@@ -14,8 +14,6 @@ module systolic_array_core
 	,output [ROW*COLS*2*DBITS-1:0] o_DATA
 	,output [ROW*COLS-1:0]         o_VALID
 
-	,output [2*DBITS-1:0]          acc
-	,output                        acc_valid
 );
 
 	wire [ROWS*DBITS-1:0] nst_row_data[0:COLS-1];
