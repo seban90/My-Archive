@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <malloc.h>
 
-#define MALLOC_CHECK(n,t) if (n == NULL) {printf(t);return NULL;}
 
 #define CONV_NO_PAD      (0x0)
 #define CONV_ENABLE_PAD  (0x1<<0)
@@ -16,14 +15,10 @@
 
 //TODO:: debug function conv2d, make sobel edge filter
 
-typedef unsigned char uchar;
-typedef unsigned int  uint;
-typedef          int  PIXEL;
-
-
-static PIXEL sobel_weights_x[3*3] = {-1, 0, 1, -2, 0, 2, -1, 0, 1};
-static PIXEL sobel_weights_y[3*3] = {-1, 2, 1, -2, 0, 2, -1, 0, 1};
-static PIXEL min_weights[3*3] = {0x1c,0x1c,0x1c,0x1c,0x1c,0x1c,0x1c,0x1c, 0x1c};
+typedef unsigned char       uchar;
+typedef unsigned int        uint;
+typedef          int        PIXEL;
+typedef unsigned long long  DPI_PIXEL;
 
 typedef struct _mat {
 	PIXEL* p;
@@ -31,26 +26,7 @@ typedef struct _mat {
 	uint   cols;
 	uint   padding;
 } Mat;
-static Mat sobel_kernel_x = {
-	 .p       = sobel_weights_x
-	,.rows    = 3
-	,.cols    = 3
-	,.padding = 0
-};
 
-static Mat sobel_kernel_y = {
-	 .p       = sobel_weights_y
-	,.rows    = 3
-	,.cols    = 3
-	,.padding = 0
-};
-
-static Mat min_kernel = {
-	 .p       = min_weights 
-	,.rows    = 3
-	,.cols    = 3
-	,.padding = 0
-};
 int conv2d (Mat* src, Mat* dst, Mat* kernel, uint flags) {
 	size_t i, j, k, p;
 
@@ -107,6 +83,34 @@ int conv2d (Mat* src, Mat* dst, Mat* kernel, uint flags) {
 
 
 #ifdef __SUB_DEBUG__
+
+#define MALLOC_CHECK(n,t) if (n == NULL) {printf(t);return NULL;}
+
+static PIXEL sobel_weights_x[3*3] = {-1, 0, 1, -2, 0, 2, -1, 0, 1};
+static PIXEL sobel_weights_y[3*3] = {-1, 2, 1, -2, 0, 2, -1, 0, 1};
+static PIXEL min_weights[3*3] = {0x1c,0x1c,0x1c,0x1c,0x1c,0x1c,0x1c,0x1c, 0x1c};
+
+static Mat sobel_kernel_x = {
+	 .p       = sobel_weights_x
+	,.rows    = 3
+	,.cols    = 3
+	,.padding = 0
+};
+
+static Mat sobel_kernel_y = {
+	 .p       = sobel_weights_y
+	,.rows    = 3
+	,.cols    = 3
+	,.padding = 0
+};
+
+static Mat min_kernel = {
+	 .p       = min_weights 
+	,.rows    = 3
+	,.cols    = 3
+	,.padding = 0
+};
+
 Mat* create_mat(uint rows, uint cols, uint padding) {
 	Mat* src;
 	src    =   (Mat*)malloc(sizeof(Mat));
@@ -134,6 +138,22 @@ void print_mat(Mat* pM) {
 	}
 	return;
 }
+int blur(Mat* src, Mat* dst,uint flags ) {
+	size_t i,j;
+	if ((src == NULL) || (dst == NULL))
+		return 0;
+	if (!conv2d(src, dst, &min_kernel, flags)) {
+		printf("\n2-D Convolution Error");
+		delete_mat(src);
+		delete_mat(dst);
+		return -1;
+	}
+
+	for (i=0;i<dst->rows;i++)
+		for (j=0;j<dst->cols;j++)
+			dst->p[i*dst->cols+j] >>= 8;
+	
+}
 int main () {
 	Mat* src;
 	Mat* dst;
@@ -147,7 +167,7 @@ int main () {
 			src->p[i*src->cols+j] = i*src->cols+j;
 
 	dst = create_mat(rows,cols,padding);
-	if (!conv2d(src, dst, &min_kernel, CONV_NO_PAD)) {
+	if (!blur(src, dst, CONV_NO_PAD)) {
 		printf("\n2-D Convolution Error");
 		delete_mat(src);
 		delete_mat(dst);
@@ -157,8 +177,7 @@ int main () {
 	print_mat(src);
 	printf("\nDST Mat\n");
 	print_mat(dst);
-	//if (!conv2d(src, dst, &min_kernel, CONV_NO_PAD)) {
-	if (!conv2d(src, dst, &min_kernel, CONV_ZERO_PAD | CONV_ENABLE_PAD)) {
+	if (!blur(src, dst, CONV_ZERO_PAD | CONV_ENABLE_PAD)) {
 		printf("\n2-D Convolution Error");
 		delete_mat(src);
 		delete_mat(dst);

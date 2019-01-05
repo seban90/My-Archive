@@ -1,19 +1,21 @@
 module PE 
-	#(parameter D = 16, 
-	  parameter ACC = 3
-	)
-	(input              CLK
-	,input              RSTN
-	,input      [D-1:0] DATA_A 
-	,input      [D-1:0] DATA_B 
-	,input              VALID_A
-	,input              VALID_B
-	,output reg [D-1:0] NEXT_DATA_A 
-	,output reg [D-1:0] NEXT_DATA_B 
-	,output reg         NEXT_VALID_A
-	,output reg         NEXT_VALID_B
-	,output [2*D-1:0]   OUT_DATA
-	,output             OUT_VALID
+#(
+	 parameter DBITS = 16
+	,parameter ACC   = 3
+)
+(
+	 input                  CLK
+	,input                  RSTN
+	,input      [DBITS-1:0] DATA_A 
+	,input      [DBITS-1:0] DATA_B 
+	,input                  VALID_A
+	,input                  VALID_B
+	,output reg [DBITS-1:0] NEXT_DATA_A 
+	,output reg [DBITS-1:0] NEXT_DATA_B 
+	,output reg             NEXT_VALID_A
+	,output reg             NEXT_VALID_B
+	,output [2*DBITS-1:0]   OUT_DATA
+	,output                 OUT_VALID
 	);
 	//////////////////////////////////////////////////////////////////////////
 	//    Function : LOG2
@@ -29,11 +31,11 @@ module PE
 	endfunction
 	//////////////////////////////////////////////////////////////////////////
 	//////////////////////////////////////////////////////////////////////////
-	reg [2*D-1:0]       acculmulate;
-	reg [2*D-1:0]       partial_mul;
-	reg                 partial_valid;
-	reg [LOG2(ACC)-1:0] acc_cnt;
-	wire                cnt_clr;
+	reg [2*DBITS-1:0] acculmulate;
+	reg [2*DBITS-1:0] partial_mul;
+	reg               partial_valid;
+	reg [LOG2(ACC):0] acc_cnt;
+	wire              cnt_clr;
 
 	always @ (posedge CLK or negedge RSTN) begin
 		if (!RSTN)        NEXT_DATA_A <= 0;

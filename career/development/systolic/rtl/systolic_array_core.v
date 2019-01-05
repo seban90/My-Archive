@@ -16,35 +16,34 @@ module systolic_array_core
 
 );
 
-	wire [ROWS*DBITS-1:0] nst_row_data[0:COLS-1];
-	wire [ROWS-1      :0] nst_row_valid[0:COLS-1];
-	wire [COLS*DBITS-1:0] nst_col_data[0:ROWS];
-	wire [COLS-1      :0] nst_col_valid[0:ROWS];
+	wire [ROWS*DBITS-1:0]   nst_row_data[0:COLS-1];
+	wire [ROWS-1      :0]   nst_row_valid[0:COLS-1];
+	wire [COLS*DBITS-1:0]   nst_col_data[0:ROWS];
+	wire [COLS-1      :0]   nst_col_valid[0:ROWS];
 
 	wire [ROWS*2*DBITS-1:0] out_data[0:COLS-1];
-	wire [ROWS-1      :0] out_valid[0:COLS-1];
-
-	genvar g;
-	generate
-
+	wire [ROWS-1      :0]   out_valid[0:COLS-1];
+	wire [ROWS*DBITS-1:0]   row_data_gen[0:COLS-1];
+	wire [ROWS-1      :0]   row_valid_gen[0:COLS-1];
 
 	assign nst_col_data[0]  = i_B;
 	assign nst_col_valid[0] = i_B_VALID;
 
+	genvar g;
+	generate
+
 	for (g=0;g<COLS;g=g+1) begin: PE_gen
 
-		wire [ROWS*DBITS-1:0] row_data_gen;
-		wire [ROWS-1:0]       row_valid_gen;
 
-		PE row[ROWS-1:0] # (
+		PE # (
 			 .DBITS (DBITS)
 			,.ACC   (ROWS)
-		) (
+		) row[ROWS-1:0] (
 			 .CLK           (  i_CLK                 )
 			,.RSTN          (  i_RSTN                )
-			,.DATA_A        (  row_data_gen          )
+			,.DATA_A        (  row_data_gen[g]       )
 			,.DATA_B        (  nst_col_data[g]       )
-			,.VALID_A       (  row_valid_gen         )
+			,.VALID_A       (  row_valid_gen[g]      )
 			,.VALID_B       (  nst_col_valid[g]      )
 			,.NEXT_DATA_A   (  nst_row_data[g]       )
 			,.NEXT_DATA_B   (  nst_col_data[g+1]     )
@@ -54,8 +53,8 @@ module systolic_array_core
 			,.OUT_VALID     (  out_valid[g]          )
 		);
 
-		assign row_data_gen  = {nst_row_data[g], i_A[(g+1)*DBITS-1:g*DBITS]};
-		assign row_valid_gen = {nst_row_valid[g], i_A_VALID[g:g]};
+		assign row_data_gen[g]  = {nst_row_data[g], i_A[(g+1)*DBITS-1:g*DBITS]};
+		assign row_valid_gen[g] = {nst_row_valid[g], i_A_VALID[g:g]};
 
 		assign o_DATA[(g+1)*(ROWS*2*DBITS)-1:g*(ROWS*2*DBITS)] = out_data[g];
 		assign o_VALID[(g+1)*ROWS-1:g*ROWS]                    = out_valid[g];
