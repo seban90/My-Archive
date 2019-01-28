@@ -80,7 +80,57 @@ int conv2d (Mat* src, Mat* dst, Mat* kernel, uint flags) {
 	return 1;
 }
 
+int corr2d(Mat* src, Mat* dst, Mat* kernel, uint flags) {
+	size_t i,j,k,p;
+	uint is_pad, pad_val, pad = src->padding;
 
+	if ((src == NULL) || (dst == NULL)) return 0;
+
+	if (flags % 2 == 0) is_pad = 0;
+	else                is_pad = 1;
+	if      (flags ==  CONV_ZERO_PAD | CONV_ENABLE_PAD) pad_val = 0;
+	else if (flags == CONV_VALUE_PAD | CONV_ENABLE_PAD) pad_val = src->p[0];
+
+	if (is_pad) {
+		for (i=0;i<src->rows;i++) {
+			for (j=0;j<src->cols;j++) {
+				PIXEL tmp = 0;
+				for (k=0;k<kernel->rows;k++) {
+					for (p=0;p<kernel->cols;p++) {
+						int kernel_idx = k*kernel->cols+p;
+						int row_idx = i-pad+k;
+						int col_idx = j-pad+p;
+						if (((row_idx >= 0) && (row_idx < src->rows)) && (col_idx >= 0 && col_idx < src->cols))
+							tmp += src->p[row_idx*src->cols+col_idx]*kernel->p[kernel_idx];
+						else 
+							tmp += pad_val*kernel->p[kernel_idx];
+
+						printf("[DEBUG] kernel index :%d\n", kernel_idx);
+
+					}
+				dst->p[i*src->cols+j] = tmp;
+				}
+			}
+		}
+	} else {
+		for (i=pad;i<src->rows-pad;i++) {
+			for (j=pad;j<src->cols-pad;j++) {
+				PIXEL tmp = 0;
+				for (k=0;k<kernel->rows;k++)
+					for (p=0;p<kernel->cols;p++){
+						int kernel_idx = k*kernel->cols+p;
+						int row_idx = i-pad+k;
+						int col_idx = j-pad+p;
+						tmp += src->p[row_idx*src->cols+col_idx]*kernel->p[kernel_idx];
+					}
+				dst->p[i*src->cols+j] = tmp;
+			}
+		}
+
+	}
+
+
+}
 
 #ifdef __SUB_DEBUG__
 
@@ -167,6 +217,7 @@ int main () {
 			src->p[i*src->cols+j] = i*src->cols+j;
 
 	dst = create_mat(rows,cols,padding);
+	/*
 	if (!blur(src, dst, CONV_NO_PAD)) {
 		printf("\n2-D Convolution Error");
 		delete_mat(src);
@@ -177,7 +228,8 @@ int main () {
 	print_mat(src);
 	printf("\nDST Mat\n");
 	print_mat(dst);
-	if (!blur(src, dst, CONV_ZERO_PAD | CONV_ENABLE_PAD)) {
+	*/
+	if (!corr2d(src, dst, &min_kernel, CONV_ZERO_PAD | CONV_ENABLE_PAD)) {
 		printf("\n2-D Convolution Error");
 		delete_mat(src);
 		delete_mat(dst);
